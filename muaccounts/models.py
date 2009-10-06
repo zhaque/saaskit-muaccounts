@@ -25,11 +25,17 @@ class MUAccount(models.Model):
     owner = models.OneToOneField(User, verbose_name=_('Owner'), blank=True, null=True)
     members = models.ManyToManyField(User, related_name='muaccount_member', blank=True, verbose_name=_('Members'))
     name = models.CharField(max_length=256, verbose_name=_('Name'))
+    tag_line = models.CharField(max_length=256, blank=True)
+    about = models.TextField(blank=True)
     logo = RemovableImageField(upload_to=_muaccount_logo_path, null=True, blank=True)
     domain = models.CharField(max_length=256, unique=True, verbose_name=_('Domain'), blank=True, null=True)
     subdomain = models.CharField(max_length=256, unique=True, verbose_name=_('Subdomain'), null=True)
     is_public = models.BooleanField(default=True, verbose_name=_('Is public'))
     theme = PickledObjectField(default=(lambda : DEFAULT_THEME_DICT), verbose_name=_('Theme')) # lambda to work around http://code.djangoproject.com/ticket/8633
+
+    analytics_code = models.TextField(blank=True)
+    webmaster_tools_code = models.CharField(max_length=150, blank=True)
+    adsense_code = models.TextField(blank=True)
 
     subdomain_root = _subdomain_root()
 
@@ -37,7 +43,8 @@ class MUAccount(models.Model):
         permissions = (
             ('can_set_custom_domain', 'Can set custom domain'),
             ('can_set_public_status', 'Can set public status'),
-            )
+            ('can_set_adsense_code', 'Can set AdSense code'),
+        )
 
     def __unicode__(self):
         return self.name or self.domain or self.subdomain+self.subdomain_root

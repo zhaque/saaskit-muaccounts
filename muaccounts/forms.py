@@ -9,11 +9,14 @@ from django.utils.translation import ugettext as _
 from models import MUAccount
 from themes import ThemeField
 
+
 class SubdomainInput(forms.TextInput):
+
     def render(self, *args, **kwargs):
         return SafeUnicode(
             super(SubdomainInput,self).render(*args,**kwargs)
             + MUAccount.subdomain_root )
+
 
 class MUAccountCreateForm(forms.Form):
     name = forms.CharField()
@@ -130,3 +133,49 @@ class AddUserForm(forms.Form):
             if limit <= len(self.muaccount.members.all()):
                 raise forms.ValidationError(_("Member limit reached."))
         return self.cleaned_data
+
+
+class StylesForm(forms.Form):
+    WIDTHS = (
+        ('doc3', '100% fluid'),
+        ('doc', '750px centered'),
+        ('doc2', '950px centered'),
+        ('doc4', '974px fluid'),
+    )
+
+    COLORS = (
+        ('aqua', 'Aqua'),
+        ('green', 'Green'),
+        ('purple', 'Purple'),
+        ('red', 'Red'),
+        ('tan-blue', 'Tan Blue'),
+        ('default', 'CrowdSense'),
+        ('fireflynight', 'Firefly Night'),
+        ('freshair', 'Fresh Air'),
+        ('girly', 'Girly'),
+        ('grayscale', 'Grayscale'),
+        ('grayscalem', 'Grayscale Modified'),
+        ('overcast', 'Overcast'),
+        ('pepper', 'Pepper'),
+        ('sunshine', 'Sunshine'),
+    )
+
+    LAYOUTS = (
+        ('yui-t6', 'Right sidebar, 300px'),
+        ('yui-t1', 'Left sidebar, 160px'),
+        ('yui-t2', 'Left sidebar, 180px'),
+        ('yui-t3', 'Left sidebar, 300px'),
+        ('yui-t4', 'Right sidebar, 180px'),
+        ('yui-t5', 'Right sidebar, 240px'),
+        ('yui-t0', 'Single Column'),
+    )
+
+    ON_OFF = (
+        ('on', 'On'),
+        ('off', 'Off'),
+    )
+
+    color_scheme = forms.ChoiceField(choices=COLORS)
+    page_width = forms.ChoiceField(choices=WIDTHS)
+    layout = forms.ChoiceField(choices=LAYOUTS)
+    rounded_corners = forms.ChoiceField(choices=ON_OFF)

@@ -6,18 +6,21 @@ from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.mail import mail_managers
 from django.core.urlresolvers import reverse
-from django.forms.widgets import HiddenInput
 from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.views.generic.simple import direct_to_template
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 
-from forms import MUAccountCreateForm, MUAccountForm, AddUserForm
-from models import MUAccount
+from muaccounts.models import MUAccount
 
-try: import sso
-except ImportError: USE_SSO = False
-else: USE_SSO = getattr(settings, 'MUACCOUNTS_USE_SSO', True)
+try:
+    import sso
+except ImportError:
+    USE_SSO = False
+else:
+    USE_SSO = getattr(settings, 'MUACCOUNTS_USE_SSO', True)
+
+
 def redirect_to_muaccount(mua):
     url = mua.get_absolute_url('muaccounts_account_detail')
     if USE_SSO:
@@ -70,42 +73,6 @@ def create_account(request):
             dn = '%s-%d' % (base, i)
         form = MUAccountCreateForm({'subdomain':dn, 'name':request.user.username})
     return direct_to_template(request, 'muaccounts/create_account.html', {'form':form})
-
-@login_required
-def account_detail(request, return_to=None, extra_context={}):
-    # We edit current user's MUAccount
-    account = get_object_or_404(MUAccount, owner=request.user)
-
-    # but if we're inside a MUAccount, we only allow editing that muaccount.
-    if getattr(request, 'muaccount', account) <> account:
-        return HttpResponseForbidden()
-
-    if return_to is None:
-        return_to = reverse('muaccounts.views.account_detail')
-
-    if 'domain' in request.POST:
-        form = MUAccountForm(request.POST, request.FILES, instance=account)
-        if form.is_valid():
-            form.save()
-            return HttpResponseRedirect(return_to)
-    else:
-        form = MUAccountForm(instance=account)
-
-    if 'user' in request.POST:
-        uform = AddUserForm(request.POST, muaccount=account)
-        if uform.is_valid():
-            account.add_member(uform.cleaned_data['user'])
-            return HttpResponseRedirect(return_to)
-    else:
-        uform = AddUserForm()
-
-    ctx = dict(object=account, form=form, add_user_form=uform)
-    ctx.update(extra_context)
-
-    return direct_to_template(
-        request, template='muaccounts/account_detail.html',
-        extra_context=ctx)
-
 @login_required
 def remove_member(request, user_id):
     if request.method <> 'POST': return HttpResponseForbidden()
