@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth import logout
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
+from django.shortcuts import redirect
 from django.http import HttpResponse, HttpResponseRedirect
 from django.utils.cache import patch_vary_headers
 
@@ -35,7 +36,7 @@ class MUAccountsMiddleware:
                 mua = MUAccount.objects.get(
                     subdomain=host[:-len(MUAccount.subdomain_root)])
                 if mua.domain:
-                    return HttpResponseRedirect(mua.get_absolute_url())
+                    return redirect(mua.get_absolute_url())
             else:
                 mua = MUAccount.objects.get(domain=host)
         except MUAccount.DoesNotExist:
@@ -47,18 +48,28 @@ class MUAccountsMiddleware:
             if self.urlconf:
                 request.urlconf = self.urlconf
 
+            if request.path.startswith('/media/') and settings.DEBUG:
+                return
+
+            #redirect user to log in if accaunt is not public
+            #this check should be in distinct middleware i think
+            #as it depends on django_authopenid for example
+            if not mua.is_public and not request.user.is_authenticated() \
+                   and not request.path == reverse('user_signin'):
+                return redirect('user_signin')
+
             # force logout of non-member and non-owner from non-public site
             if request.user.is_authenticated() and not mua.is_public \
                    and request.user <> mua.owner \
                    and request.user not in mua.members.all():
                 logout(request)
-                return HttpResponseRedirect(reverse('muaccounts_not_a_member', urlconf=self.urlconf))
+                return redirect(reverse('muaccounts_not_a_member', urlconf=self.urlconf))
 
             # call request hook
             for receiver,retval in signals.muaccount_request.send(sender=request, request=request, muaccount=mua):
                 if isinstance(retval, HttpResponse):
                     return retval
-            
+
 
     def process_response(self, request, response):
         if getattr(request, "urlconf", None):
