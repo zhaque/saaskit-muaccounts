@@ -22,7 +22,8 @@ def _muaccount_logo_path(instance, filename):
     return 'muaccount-logos/%d.jpg' % instance.pk
 
 class MUAccount(models.Model):
-    owner = models.OneToOneField(User, verbose_name=_('Owner'), blank=True, null=True)
+    owner = models.ForeignKey(User, verbose_name=_('Owner'),
+                            blank=True, null=True, related_name='owned_sites')
     members = models.ManyToManyField(User, related_name='muaccount_member', blank=True, verbose_name=_('Members'))
     name = models.CharField(max_length=256, verbose_name=_('Name'))
     tag_line = models.CharField(max_length=256, blank=True)
