@@ -11,4 +11,10 @@ def owner_only(func):
 
     return wrapped
 
-
+def public(func):
+    """ decorator that give access right even if user site is not public."""
+    def wrapper(request, *args, **kwargs):
+        return func(request, *args, **kwargs)
+    wrapper.is_public = True
+    
+    return wrapper

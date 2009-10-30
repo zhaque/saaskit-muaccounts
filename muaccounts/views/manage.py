@@ -1,15 +1,17 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
-from muaccounts.models import MUAccount
 from django.http import HttpResponseRedirect, HttpResponseForbidden
-from muaccounts.forms import MUAccountForm, AddUserForm, StylesForm
 from django.core.urlresolvers import reverse
 from django.views.generic.simple import direct_to_template
-from django.views.generic.create_update import update_object
+from django.views.generic.create_update import update_object, apply_extra_context
 from django.forms.models import modelform_factory
 from django.shortcuts import redirect
-import decorators
+
+from muaccounts.models import MUAccount
+from muaccounts.forms import MUAccountForm, AddUserForm, StylesForm
+
+from muaccounts.views import decorators
 
 @login_required
 def account_detail(request, return_to=None, extra_context={}):
@@ -45,30 +47,6 @@ def account_detail(request, return_to=None, extra_context={}):
     return direct_to_template(
         request, template='muaccounts/account_detail.html',
         extra_context=ctx)
-
-@decorators.owner_only
-def member_list(request, template='muaccounts/member_list.html'):
-    account = get_object_or_404(MUAccount, owner=request.user)
-    return direct_to_template(request, template=template, extra_context={
-        'account': account,
-        'member_list': account.members.all(),
-        'user': request.user,
-    })
-
-@decorators.owner_only
-def add_member(request, template='muaccounts/manage/form.html',
-                                    return_to='muaccounts_member_list'):
-    account = get_object_or_404(MUAccount, owner=request.user)
-    if request.method == 'POST':
-        form = AddUserForm(request.POST, muaccount=account)
-        if form.is_valid():
-            account.add_member(form.cleaned_data['user'])
-            return redirect(return_to)
-    else:
-        form = AddUserForm()
-    return direct_to_template(request, template=template, extra_context={
-        'form': form,
-    })
 
 @decorators.owner_only
 def advanced_settings(request):

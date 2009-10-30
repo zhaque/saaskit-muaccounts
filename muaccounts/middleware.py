@@ -48,27 +48,34 @@ class MUAccountsMiddleware:
             if self.urlconf:
                 request.urlconf = self.urlconf
 
-            if request.path.startswith('/media/') and settings.DEBUG:
+    def process_view(self, request, view, args, kwargs):
+        
+        #check whether request for media files
+        if request.path.startswith('/media/') and settings.DEBUG:
                 return
+        
+        #check special anchor is_public
+        if getattr(view, 'is_public', False):
+            return
+    
+        #redirect user to log in if accaunt is not public
+        #this check should be in distinct middleware i think
+        #as it depends on django_authopenid for example
+        if not request.muaccount.is_public and not request.user.is_authenticated() \
+               and not request.path == reverse('user_signin'):
+            return redirect('user_signin')
 
-            #redirect user to log in if accaunt is not public
-            #this check should be in distinct middleware i think
-            #as it depends on django_authopenid for example
-            if not mua.is_public and not request.user.is_authenticated() \
-                   and not request.path == reverse('user_signin'):
-                return redirect('user_signin')
+        # force logout of non-member and non-owner from non-public site
+        if request.user.is_authenticated() and not request.muaccount.is_public \
+               and request.user <> request.muaccount.owner \
+               and request.user not in request.muaccount.members.all():
+            logout(request)
+            return redirect(reverse('muaccounts_not_a_member', urlconf=self.urlconf))
 
-            # force logout of non-member and non-owner from non-public site
-            if request.user.is_authenticated() and not mua.is_public \
-                   and request.user <> mua.owner \
-                   and request.user not in mua.members.all():
-                logout(request)
-                return redirect(reverse('muaccounts_not_a_member', urlconf=self.urlconf))
-
-            # call request hook
-            for receiver,retval in signals.muaccount_request.send(sender=request, request=request, muaccount=mua):
-                if isinstance(retval, HttpResponse):
-                    return retval
+        # call request hook
+        for receiver,retval in signals.muaccount_request.send(sender=request, request=request, muaccount=request.muaccount):
+            if isinstance(retval, HttpResponse):
+                return retval
 
 
     def process_response(self, request, response):

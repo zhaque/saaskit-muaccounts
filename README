@@ -215,3 +215,9 @@ Table of Contents
 10 License
 ~~~~~~~~~~
   This project is licensed on terms of GPL (GPL-LICENSE.txt) licenses. 
+
+11. import yahoo contacts
+Register your app domain:
+http://developer.yahoo.com/auth/
+
+and add BBAUTH_APP_ID and BBAUTH_SHARED_SECRET into local_settings.py after getting ID.

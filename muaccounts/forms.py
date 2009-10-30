@@ -6,9 +6,13 @@ from django.contrib.auth.models import User
 from django.utils.safestring import SafeUnicode
 from django.utils.translation import ugettext as _
 
+from friends.importer import import_vcards
+from registration.forms import RegistrationFormUniqueEmail
+from registration.signals import user_registered, user_activated
+from emailconfirmation.models import EmailAddress
+
 from models import MUAccount
 from themes import ThemeField
-
 
 class SubdomainInput(forms.TextInput):
 
@@ -179,3 +183,34 @@ class StylesForm(forms.Form):
     page_width = forms.ChoiceField(choices=WIDTHS)
     layout = forms.ChoiceField(choices=LAYOUTS)
     rounded_corners = forms.ChoiceField(choices=ON_OFF)
+
+# @@@ move to django-friends when ready
+
+class ImportVCardForm(forms.Form):
+
+    vcard_file = forms.FileField(label="vCard File")
+
+    def save(self, user):
+        imported, total = import_vcards(self.cleaned_data["vcard_file"].content, user)
+        return imported, total
+
+class InvitedRegistrationForm(RegistrationFormUniqueEmail):
+    
+    #based on pinax's local app accout SignupForm save method
+    def save(self, join_invitation):
+        email = self.cleaned_data['email']
+        
+        same_email = join_invitation.contact.email == email
+        
+        if same_email:
+            new_user = User.objects.create_user(self.cleaned_data['username'], email=email, password=self.cleaned_data['password1'])
+            user_registered.send(sender=User, user=new_user)
+            user_activated.send(sender=User, user=new_user)
+            EmailAddress(user=new_user, email=email, verified=True, primary=True).save()
+            return new_user, self.cleaned_data.get('redirect_to')
+        else:
+            new_user = super(InvitedRegistrationForm, self).save()
+            join_invitation.accept(new_user)
+            EmailAddress(user=new_user, email=email, primary=True).save()
+        
+        return new_user, self.cleaned_data.get('redirect_to')
