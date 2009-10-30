@@ -207,7 +207,6 @@ class InvitedRegistrationForm(RegistrationFormUniqueEmail):
             user_registered.send(sender=User, user=new_user)
             user_activated.send(sender=User, user=new_user)
             EmailAddress(user=new_user, email=email, verified=True, primary=True).save()
-            return new_user, self.cleaned_data.get('redirect_to')
         else:
             new_user = super(InvitedRegistrationForm, self).save()
             join_invitation.accept(new_user)
