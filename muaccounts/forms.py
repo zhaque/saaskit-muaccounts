@@ -196,7 +196,6 @@ class ImportVCardForm(forms.Form):
 
 class InvitedRegistrationForm(RegistrationFormUniqueEmail):
     
-    #based on pinax's local app accout SignupForm save method
     def save(self, join_invitation):
         email = self.cleaned_data['email']
         

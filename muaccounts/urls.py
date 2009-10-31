@@ -21,9 +21,8 @@ urlpatterns = patterns('',
 
     url(r'^styles/$', 'muaccounts.views.styles_settings',
         name='muaccounts_manage_styles'),
-
-    #django-friends related views
     
+    #django-friends related views
     url(r'^users/$', 'muaccounts.views.members.member_list',
         name='muaccounts_member_list'),
     url(r'^invite/$', 'muaccounts.views.members.invite', name="muaccounts_add_member"),
