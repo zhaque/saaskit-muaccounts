@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.views.generic.simple import direct_to_template
 from django.contrib.auth import login
 from django.http import Http404
+from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from django.utils.translation import ugettext_lazy as _
@@ -50,7 +51,7 @@ def invite(request, form_class=MuJoinRequestForm, initial=None, **kwargs):
             return redirect('muaccounts_member_list')
     else:
         join_request_form = form_class(initial=initial)
-        
+
     return render_to_response(template_name, {
         "join_request_form": join_request_form,
         }, context_instance=RequestContext(request))

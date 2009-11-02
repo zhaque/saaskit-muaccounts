@@ -47,7 +47,7 @@ class MUAccountsMiddleware:
             request.muaccount = mua
             if self.urlconf:
                 request.urlconf = self.urlconf
-
+            
     def process_view(self, request, view, args, kwargs):
         
         #check whether request for media files

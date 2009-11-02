@@ -1,19 +1,22 @@
 import re, socket, csv
+from random import random
 
 from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.safestring import SafeUnicode
 from django.utils.translation import ugettext as _
+from django.utils.hashcompat import sha_constructor
+from django.template.loader import render_to_string
 
 from friends.importer import import_vcards
-from friends.models import Contact, JoinInvitation
+from friends.models import Contact, JoinInvitation, send_mail
 from friends.forms import JoinRequestForm
 from registration.forms import RegistrationFormUniqueEmail
 from registration.signals import user_registered, user_activated
 from emailconfirmation.models import EmailAddress
 
-from models import MUAccount
+from muaccounts.models import MUAccount
 from themes import ThemeField
 
 class SubdomainInput(forms.TextInput):
@@ -265,13 +268,38 @@ class MuJoinRequestForm(forms.Form):
         return self.cleaned_data
     
     def save(self, user):
-        addresses = set([contact.email for contact in self.cleaned_data.get('contacts') or []])
+        contacts = self.cleaned_data.get('contacts', [])
         if self.cleaned_data.get('email'):
-            addresses.add(self.cleaned_data['email'])
+            contact = Contact.objects.get_or_create(email=self.cleaned_data['email'], user=user)
+            if contact not in contacts:
+                contacts.append(contact)
         
-        for email in addresses:
-            join_request = JoinInvitation.objects.send_invitation(user, email, self.cleaned_data["message"])
-            user.message_set.create(message="Invitation to join sent to %s" % join_request.contact.email)
+        muaccount = MUAccount.objects.get(id=self.cleaned_data['muaccount'])
+        message = self.cleaned_data['message']
+        context = {
+            "SITE_NAME": muaccount.name,
+            "CONTACT_EMAIL": user.email or settings.CONTACT_EMAIL,
+            "user": user,
+            "message": message,
+        }
+        
+        for contact in contacts:
+            #BASED ON django-friends JoinInvitationManager's method 'send_invitation' 
+            contact, created = Contact.objects.get_or_create(email=contact.email, user=user)
+            salt = sha_constructor(str(random())).hexdigest()[:5]
+            confirmation_key = sha_constructor(salt + contact.email).hexdigest()
+            context['accept_url'] = muaccount.get_absolute_url('friends_accept_join', 
+                                                               args=(confirmation_key,))
+            
+            subject = render_to_string("friends/join_invite_subject.txt", context)
+            email_message = render_to_string("friends/join_invite_message.txt", context)
+            
+            send_mail(subject, email_message, settings.DEFAULT_FROM_EMAIL, [contact.email])        
+            join_request = JoinInvitation.objects.create(from_user=user, contact=contact, 
+                                                 message=message, status="2", 
+                                                 confirmation_key=confirmation_key)
+            user.message_set.create(message=_("Invitation to join sent to %(email)s") 
+                                                % {'email':contact.email})
 
 class InvitedRegistrationForm(RegistrationFormUniqueEmail):
     
