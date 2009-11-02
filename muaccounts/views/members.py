@@ -6,19 +6,20 @@ from django.template import RequestContext
 from django.shortcuts import redirect
 from django.contrib.auth.models import User
 from django.views.generic.simple import direct_to_template
-from django.contrib.auth import login, authenticate
-from django.http import HttpResponse, Http404
+from django.contrib.auth import login
+from django.http import Http404
+from django.core.urlresolvers import reverse
 
 from django.utils.translation import ugettext_lazy as _
 
 from friends.models import JoinInvitation
-from friends.forms import JoinRequestForm
 from friends.importer import import_yahoo, import_google
 from registration.views import activate
 from registration.models import RegistrationProfile
 
 from muaccounts.models import MUAccount
 from muaccounts.forms import ImportVCardForm, InvitedRegistrationForm
+from muaccounts.forms import MuJoinRequestForm, ImportCSVContactsForm
 from muaccounts.views import decorators
 
 @decorators.owner_only
@@ -34,7 +35,7 @@ def member_list(request, template='friends/member_list.html'):
     })
 
 @decorators.owner_only
-def invite(request, form_class=JoinRequestForm, **kwargs):
+def invite(request, form_class=MuJoinRequestForm, initial=None, **kwargs):
     template_name = kwargs.get("template_name", "friends/invite.html")
     if request.is_ajax():
         template_name = kwargs.get(
@@ -42,12 +43,14 @@ def invite(request, form_class=JoinRequestForm, **kwargs):
             "friends/invite_facebox.html"
         )
 
-    join_request_form = form_class()
     if request.method == "POST":
         join_request_form = form_class(request.POST)
         if join_request_form.is_valid():
             join_request_form.save(request.user)
             return redirect('muaccounts_member_list')
+    else:
+        join_request_form = form_class(initial=initial)
+        
     return render_to_response(template_name, {
         "join_request_form": join_request_form,
         }, context_instance=RequestContext(request))
@@ -107,35 +110,51 @@ def mu_activate(request, activation_key,
     
 
 @decorators.owner_only
-def contacts(request, form_class=ImportVCardForm,
+def contacts(request, vcard_form=ImportVCardForm, cvs_form=ImportCSVContactsForm,
         template_name="friends/contacts.html"):
-    if request.method == "POST":
-        if request.POST["action"] == "upload_vcard":
-            import_vcard_form = form_class(request.POST, request.FILES)
-            if import_vcard_form.is_valid():
-                imported, total = import_vcard_form.save(request.user)
-                request.user.message_set.create(message=_("%(total)s vCards found, %(imported)s contacts imported.") % {'imported': imported, 'total': total})
-                import_vcard_form = ImportVCardForm()
-        else:
-            import_vcard_form = form_class()
-            if request.POST["action"] == "import_yahoo":
-                bbauth_token = request.session.get('bbauth_token')
-                del request.session['bbauth_token']
-                if bbauth_token:
-                    imported, total = import_yahoo(bbauth_token, request.user)
-                    request.user.message_set.create(message=_("%(total)s people with email found, %(imported)s contacts imported.") % {'imported': imported, 'total': total})
-            if request.POST["action"] == "import_google":
-                authsub_token = request.session.get('authsub_token')
-                del request.session['authsub_token']
-                if authsub_token:
-                    print "authsub_token --> ", authsub_token
-                    imported, total = import_google(authsub_token, request.user)
-                    request.user.message_set.create(message=_("%(total)s people with email found, %(imported)s contacts imported.") % {'imported': imported, 'total': total})
-    else:
-        import_vcard_form = form_class()
     
-    return render_to_response(template_name, {
-        "import_vcard_form": import_vcard_form,
-        "bbauth_token": request.session.get('bbauth_token'),
-        "authsub_token": request.session.get('authsub_token'),
-    }, context_instance=RequestContext(request))
+    import_forms = (
+        ('upload_vcard', vcard_form, _("%(total)s vCards found, %(imported)s contacts imported."),
+         _("Import vCard")),
+        ('upload_cvs', cvs_form, _("%(total)s contacts found, %(imported)s contacts imported."),
+         _("Import CVS")),
+    )
+    context = {'import_forms': []}
+    
+    for action, form_class, message, title in import_forms:
+        reset_form = True
+        if request.POST.get("action") == action:
+            form = form_class(request.POST, request.FILES)
+            if form.is_valid():
+                imported, total = form.save(request.user)
+                request.user.message_set.create(message=message % {'imported': imported, 'total': total})
+            else:
+                reset_form = False
+        
+        if reset_form:
+            form = form_class()
+        
+        context['import_forms'].append({'form': form, 'action': action, 'title': title})
+        
+
+    import_services = (
+        ('import_yahoo', 'bbauth_token', import_yahoo, 
+         _("Import from Yahoo Address Book"), reverse('bbauth_login')),
+        ('import_google', 'authsub_token', import_google, 
+         _("Import from Google Contacts"), reverse('authsub_login')),
+    )
+    context['import_services'] = []
+    
+    for action, token_name, import_func, title, auth_url in import_services:
+        token = request.session.get(token_name)
+        if request.POST.get("action") == action:
+            del request.session[token_name]
+            if token:
+                imported, total = import_func(token, request.user)
+                request.user.message_set.create(
+                        message=_("%(total)s people with email found, %(imported)s contacts imported.") \
+                                     % {'imported': imported, 'total': total})
+        context['import_services'].append({'title': title, 'token': token, 
+                                           'action': action, 'auth_url': auth_url})
+            
+    return render_to_response(template_name, context, context_instance=RequestContext(request))

@@ -3,6 +3,17 @@ from django.views.generic.simple import direct_to_template
 # to main site urlconf add also:
 # (r'^create/$', 'muaccounts.views.create_account'),
 
+from muaccounts.views import members
+
+def mu_initial(func):
+    def wrapped(request, initial=None, *args, **kwargs):
+        if initial is None: initial = {}
+        initial['muaccount'] = request.muaccount.id
+        return func(request, initial=initial, *args, **kwargs)
+    
+    return wrapped
+
+
 urlpatterns = patterns('',
     url(r'^$', 'muaccounts.views.account_detail',
         name='muaccounts_account_detail'),
@@ -25,7 +36,7 @@ urlpatterns = patterns('',
     #django-friends related views
     url(r'^users/$', 'muaccounts.views.members.member_list',
         name='muaccounts_member_list'),
-    url(r'^invite/$', 'muaccounts.views.members.invite', name="muaccounts_add_member"),
+    url(r'^invite/$', mu_initial(members.invite), name="muaccounts_add_member"),
     
     url(r'^accept/(\w+)/$', 'muaccounts.views.members.accept_join', name='friends_accept_join'),
     
@@ -36,6 +47,5 @@ urlpatterns = patterns('',
     url(r'^bbauth/login/$', 'muaccounts.views.bbauth.login', name="bbauth_login"),
     url(r'^bbauth/success/$', 'muaccounts.views.bbauth.success', name="bbauth_success"),
     url(r'^bbauth/logout/$', 'muaccounts.views.bbauth.logout', name="bbauth.logout"),
-    
     
 )

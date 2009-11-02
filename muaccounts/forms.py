@@ -1,4 +1,4 @@
-import re, socket
+import re, socket, csv
 
 from django import forms
 from django.conf import settings
@@ -7,6 +7,8 @@ from django.utils.safestring import SafeUnicode
 from django.utils.translation import ugettext as _
 
 from friends.importer import import_vcards
+from friends.models import Contact, JoinInvitation
+from friends.forms import JoinRequestForm
 from registration.forms import RegistrationFormUniqueEmail
 from registration.signals import user_registered, user_activated
 from emailconfirmation.models import EmailAddress
@@ -39,7 +41,8 @@ class MUAccountCreateForm(forms.Form):
                 raise forms.ValidationError(
                     _('It is not allowed to use this domain name.'))
 
-        try: MUAccount.objects.get(subdomain=subdomain)
+        try: 
+            MUAccount.objects.get(subdomain=subdomain)
         except MUAccount.DoesNotExist: pass
         else: raise forms.ValidationError(
             _('An account with this subdomain already exists.'))
@@ -193,6 +196,82 @@ class ImportVCardForm(forms.Form):
     def save(self, user):
         imported, total = import_vcards(self.cleaned_data["vcard_file"].content, user)
         return imported, total
+
+class ImportCSVContactsForm(forms.Form):
+    
+    csv_file = forms.FileField(label=_("CSV file"),
+        help_text = _("Format of each row: \"contact name\",\"e-mail address\". Rows with wrong format will be skiped."))
+    
+    def clean_csv_file(self):
+        """just iterate over file"""
+        try:
+            for row in csv.reader(self.cleaned_data['csv_file']):
+                pass
+        except csv.Error, msg:
+            print msg
+            raise forms.ValidationError(_("Error while reading. Check your file."))
+                
+        return self.cleaned_data['csv_file']
+    
+    def save(self, user):
+        total, imported = 0, 0
+        for row in csv.reader(self.cleaned_data['csv_file']):
+            if row:
+                try:
+                    name, email = row
+                except ValueError:
+                    #default behaviour
+                    continue
+                
+                total +=1
+                try:
+                    Contact.objects.get(user=user, email=email)
+                except Contact.DoesNotExist:
+                    Contact(user=user, name=name, email=email).save()
+                    imported += 1
+        return imported, total
+
+_existing_emails = lambda muaccount: EmailAddress.objects.filter(
+                                                    user__muaccount_member = muaccount, 
+                                                    verified=True)
+class MuJoinRequestForm(forms.Form):
+    
+    email = forms.EmailField(label=_("Email"), required=False, widget=forms.TextInput(attrs={'size':'30'}))
+    contacts = forms.models.ModelMultipleChoiceField(queryset=Contact.objects.all(),
+                                                     required=False, label=_('contacts'))
+    message = forms.CharField(label="Message", required=False, 
+                              widget=forms.Textarea(attrs = {'cols': '30', 'rows': '5'}))
+    muaccount = forms.IntegerField(widget=forms.HiddenInput())
+    
+    def __init__(self, data=None, files=None, initial=None, *args, **kwargs):
+        super(MuJoinRequestForm, self).__init__(data=data, files=files, initial=initial, *args, **kwargs)
+        muaccount = self.data.get('muaccount') or self.initial.get('muaccount')
+        self.fields['contacts'].queryset = self.fields['contacts'].queryset\
+                .filter(user__owned_sites=muaccount)\
+                .exclude(email__in=_existing_emails(muaccount).values_list('email', flat=True))
+    
+    def clean(self):
+        # @@@ this assumes email-confirmation is being used
+        if 'email' in self.cleaned_data:
+            try:
+                existing_email = _existing_emails(self.cleaned_data['muaccount'])\
+                                       .get(email=self.cleaned_data['email'])
+            except EmailAddress.DoesNotExist:
+                pass
+            else:
+                self._errors['email'] = self.error_class([_(u"User with this e-mail address is already registered.")])
+                del self.cleaned_data['email']
+            
+        return self.cleaned_data
+    
+    def save(self, user):
+        addresses = set([contact.email for contact in self.cleaned_data.get('contacts') or []])
+        if self.cleaned_data.get('email'):
+            addresses.add(self.cleaned_data['email'])
+        
+        for email in addresses:
+            join_request = JoinInvitation.objects.send_invitation(user, email, self.cleaned_data["message"])
+            user.message_set.create(message="Invitation to join sent to %s" % join_request.contact.email)
 
 class InvitedRegistrationForm(RegistrationFormUniqueEmail):
     
