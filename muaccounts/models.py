@@ -38,8 +38,8 @@ class MUAccount(models.Model):
     webmaster_tools_code = models.CharField(max_length=150, blank=True)
     adsense_code = models.TextField(blank=True)
     
-    yahoo_app_id = models.CharField(max_length=150, blank=True)
-    yahoo_secret = models.CharField(max_length=150, blank=True)
+    yahoo_app_id = models.CharField(_("yahoo application ID"), max_length=150, blank=True)
+    yahoo_secret = models.CharField(_("yahoo shared secret"), max_length=150, blank=True)
 
     subdomain_root = _subdomain_root()
 
