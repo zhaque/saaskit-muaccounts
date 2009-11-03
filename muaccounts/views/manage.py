@@ -75,8 +75,7 @@ def general_settings(request):
     if request.user.has_perm('muaccounts.can_set_public_status'):
         fields.append('is_public')
 
-
-    return update_object(request,
+    return update_object(request, 
         form_class=modelform_factory(MUAccount, fields=fields),
         object_id=request.muaccount.pk,
         post_save_redirect=reverse('muaccounts_manage_general'),

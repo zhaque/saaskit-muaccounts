@@ -7,8 +7,6 @@ from django.core.urlresolvers import reverse
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-from sorl.thumbnail.fields import ImageWithThumbnailsField
-
 from muaccounts import signals
 from muaccounts.model_fields import RemovableImageField, PickledObjectField
 from muaccounts.themes import DEFAULT_THEME_DICT
@@ -29,12 +27,7 @@ class MUAccount(models.Model):
     name = models.CharField(max_length=256, verbose_name=_('Name'))
     tag_line = models.CharField(max_length=256, blank=True)
     about = models.TextField(blank=True)
-    logo = ImageWithThumbnailsField(
-                upload_to=_muaccount_logo_path,
-                thumbnail={'size': (80, 80), 'options': ('crop', 'upscale'),
-                           'extension': 'png'},
-                )
-    #logo = RemovableImageField(upload_to=_muaccount_logo_path, null=True, blank=True)
+    logo = RemovableImageField(upload_to=_muaccount_logo_path, null=True, blank=True)
     domain = models.CharField(max_length=256, unique=True, verbose_name=_('Domain'), blank=True, null=True)
     subdomain = models.CharField(max_length=256, unique=True, verbose_name=_('Subdomain'), null=True)
     is_public = models.BooleanField(default=True, verbose_name=_('Is public'))
@@ -61,7 +54,6 @@ class MUAccount(models.Model):
 
     def get_full_domain(self):
         return self.domain or self.subdomain+self.subdomain_root
-        return self.domain
 
     def get_absolute_url(self, path='/', args=(), kwargs={}):
         if hasattr(settings, 'MUACCOUNTS_PORT'): port=':%d'%settings.MUACCOUNTS_PORT
