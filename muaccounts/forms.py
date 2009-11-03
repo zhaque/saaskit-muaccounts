@@ -312,9 +312,9 @@ class MuJoinRequestForm(forms.Form):
     def save(self, user):
         contacts = self.cleaned_data.get('contacts', [])
         if self.cleaned_data.get('email'):
-            contact = Contact.objects.get_or_create(email=self.cleaned_data['email'], user=user)
+            contact = tuple(Contact.objects.get_or_create(email=self.cleaned_data['email'], user=user))
             if contact not in contacts:
-                contacts.append(contact)
+                contacts += (contact,)
         
         muaccount = MUAccount.objects.get(id=self.cleaned_data['muaccount'])
         message = self.cleaned_data['message']
