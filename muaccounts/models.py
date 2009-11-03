@@ -7,10 +7,11 @@ from django.core.urlresolvers import reverse
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-import signals
+from sorl.thumbnail.fields import ImageWithThumbnailsField
 
-from model_fields import RemovableImageField, PickledObjectField
-from themes import DEFAULT_THEME_DICT
+from muaccounts import signals
+from muaccounts.model_fields import RemovableImageField, PickledObjectField
+from muaccounts.themes import DEFAULT_THEME_DICT
 
 def _subdomain_root():
     root = settings.MUACCOUNTS_ROOT_DOMAIN
@@ -28,7 +29,12 @@ class MUAccount(models.Model):
     name = models.CharField(max_length=256, verbose_name=_('Name'))
     tag_line = models.CharField(max_length=256, blank=True)
     about = models.TextField(blank=True)
-    logo = RemovableImageField(upload_to=_muaccount_logo_path, null=True, blank=True)
+    logo = ImageWithThumbnailsField(
+                upload_to=_muaccount_logo_path,
+                thumbnail={'size': (80, 80), 'options': ('crop', 'upscale'),
+                           'extension': 'png'},
+                )
+    #logo = RemovableImageField(upload_to=_muaccount_logo_path, null=True, blank=True)
     domain = models.CharField(max_length=256, unique=True, verbose_name=_('Domain'), blank=True, null=True)
     subdomain = models.CharField(max_length=256, unique=True, verbose_name=_('Subdomain'), null=True)
     is_public = models.BooleanField(default=True, verbose_name=_('Is public'))
