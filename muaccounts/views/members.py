@@ -140,10 +140,11 @@ def contacts(request, vcard_form=ImportVCardForm, cvs_form=ImportCSVContactsForm
         context['import_forms'].append({'form': form, 'action': action, 'title': title})
         
 
-    import_services = (
-        ('import_yahoo', 'bbauth_token', import_yahoo, 
-         _("Import from Yahoo Address Book"), reverse('bbauth_login')),
-    )
+    import_services = []
+    if request.muaccount.yahoo_app_id and request.muaccount.yahoo_secret:
+        import_services.append(('import_yahoo', 'bbauth_token', import_yahoo, 
+         _("Import from Yahoo Address Book"), reverse('bbauth_login')))
+        
     context['import_services'] = []
     
     for action, token_name, import_func, title, auth_url in import_services:
