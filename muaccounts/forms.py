@@ -9,6 +9,8 @@ from django.utils.translation import ugettext as _
 from django.utils.hashcompat import sha_constructor
 from django.template.loader import render_to_string
 
+from gdata.contacts.service import ContactsService
+import gdata
 from friends.importer import import_vcards
 from friends.models import Contact, JoinInvitation, send_mail
 from friends.forms import JoinRequestForm
@@ -234,6 +236,46 @@ class ImportCSVContactsForm(forms.Form):
                     imported += 1
         return imported, total
 
+class ImportGoogleContactsForm(forms.Form):
+    
+    email = forms.EmailField()
+    password = forms.CharField(widget=forms.PasswordInput)
+    
+    def clean(self):
+        if 'email' in self.cleaned_data and 'password' in self.cleaned_data:
+            contacts_service = ContactsService(self.cleaned_data['email'], self.cleaned_data['password'])
+            try:
+                contacts_service.ProgrammaticLogin()
+            except gdata.service.BadAuthentication, msg:
+                raise forms.ValidationError(_(u'Incorrect Google account credentials'))
+        return self.cleaned_data
+    
+    def save(self, user):
+        contacts_service = ContactsService(self.cleaned_data['email'], self.cleaned_data['password'])
+        contacts_service.ProgrammaticLogin()
+        #based on django-friends importer module
+        entries = []
+        feed = contacts_service.GetContactsFeed()
+        entries.extend(feed.entry)
+        next_link = feed.GetNextLink()
+        while next_link:
+            feed = contacts_service.GetContactsFeed(uri=next_link.href)
+            entries.extend(feed.entry)
+            next_link = feed.GetNextLink()
+        total = 0
+        imported = 0
+        for entry in entries:
+            name = entry.title.text
+            for e in entry.email:
+                email = e.address
+                total += 1
+                try:
+                    Contact.objects.get(user=user, email=email)
+                except Contact.DoesNotExist:
+                    Contact(user=user, name=name, email=email).save()
+                    imported += 1
+        return imported, total
+
 _existing_emails = lambda muaccount: EmailAddress.objects.filter(
                                                     user__muaccount_member = muaccount, 
                                                     verified=True)
@@ -268,12 +310,12 @@ class MuJoinRequestForm(forms.Form):
         return self.cleaned_data
     
     def save(self, user):
-        contacts = self.cleaned_data.get('contacts', [])
+        contacts = list(self.cleaned_data.get('contacts', []))
         if self.cleaned_data.get('email'):
-            contact = Contact.objects.get_or_create(email=self.cleaned_data['email'], user=user)
+            contact, created = Contact.objects.get_or_create(email=self.cleaned_data['email'], user=user)
             if contact not in contacts:
                 contacts.append(contact)
-        
+
         muaccount = MUAccount.objects.get(id=self.cleaned_data['muaccount'])
         message = self.cleaned_data['message']
         context = {

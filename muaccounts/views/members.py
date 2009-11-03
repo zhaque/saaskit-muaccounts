@@ -13,14 +13,15 @@ from django.core.urlresolvers import reverse
 
 from django.utils.translation import ugettext_lazy as _
 
+import gdata
 from friends.models import JoinInvitation
-from friends.importer import import_yahoo, import_google
+from friends.importer import import_yahoo
 from registration.views import activate
 from registration.models import RegistrationProfile
 
 from muaccounts.models import MUAccount
 from muaccounts.forms import ImportVCardForm, InvitedRegistrationForm
-from muaccounts.forms import MuJoinRequestForm, ImportCSVContactsForm
+from muaccounts.forms import MuJoinRequestForm, ImportCSVContactsForm, ImportGoogleContactsForm
 from muaccounts.views import decorators
 
 @decorators.owner_only
@@ -108,17 +109,18 @@ def mu_activate(request, activation_key,
     request.muaccount.add_member(account)
     response = activate(request, activation_key, template_name, extra_context)
     
-    
-
 @decorators.owner_only
-def contacts(request, vcard_form=ImportVCardForm, cvs_form=ImportCSVContactsForm,
-        template_name="friends/contacts.html"):
+def contacts(request, vcard_form=ImportVCardForm, cvs_form=ImportCSVContactsForm, 
+             google_import_form=ImportGoogleContactsForm,
+             template_name="friends/contacts.html"):
     
     import_forms = (
         ('upload_vcard', vcard_form, _("%(total)s vCards found, %(imported)s contacts imported."),
          _("Import vCard")),
         ('upload_cvs', cvs_form, _("%(total)s contacts found, %(imported)s contacts imported."),
          _("Import CVS")),
+        ('import_google', google_import_form, _("%(total)s contacts found, %(imported)s contacts imported."),
+         _("Import from Google Contacts")),
     )
     context = {'import_forms': []}
     
@@ -138,12 +140,11 @@ def contacts(request, vcard_form=ImportVCardForm, cvs_form=ImportCSVContactsForm
         context['import_forms'].append({'form': form, 'action': action, 'title': title})
         
 
-    import_services = (
-        ('import_yahoo', 'bbauth_token', import_yahoo, 
-         _("Import from Yahoo Address Book"), reverse('bbauth_login')),
-        ('import_google', 'authsub_token', import_google, 
-         _("Import from Google Contacts"), reverse('authsub_login')),
-    )
+    import_services = []
+    if request.muaccount.yahoo_app_id and request.muaccount.yahoo_secret:
+        import_services.append(('import_yahoo', 'bbauth_token', import_yahoo, 
+         _("Import from Yahoo Address Book"), reverse('bbauth_login')))
+        
     context['import_services'] = []
     
     for action, token_name, import_func, title, auth_url in import_services:

@@ -41,8 +41,7 @@ urlpatterns = patterns('',
     url(r'^accept/(\w+)/$', 'muaccounts.views.members.accept_join', name='friends_accept_join'),
     
     url(r'^contacts/$', 'muaccounts.views.members.contacts',  name='invitations_contacts'),
-    #google authentication
-    url(r'^authsub_login/$', 'muaccounts.views.authsub_login', name="authsub_login"),
+
     #yahoo authentication
     url(r'^bbauth/login/$', 'muaccounts.views.bbauth.login', name="bbauth_login"),
     url(r'^bbauth/success/$', 'muaccounts.views.bbauth.success', name="bbauth_success"),
