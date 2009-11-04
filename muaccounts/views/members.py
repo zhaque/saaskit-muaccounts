@@ -109,7 +109,7 @@ def mu_activate(request, activation_key,
         raise Http404('Wrong or expired activation key.')
     
     request.muaccount.add_member(account)
-    response = activate(request, activation_key, template_name, extra_context)
+    return activate(request, activation_key, template_name, extra_context)
     
 @decorators.owner_only
 def contacts(request, vcard_form=ImportVCardForm, cvs_form=ImportCSVContactsForm, 
