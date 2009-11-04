@@ -80,6 +80,7 @@ def accept_join(request, confirmation_key, registration_form=InvitedRegistration
             if form.is_valid():
                 new_user, redirect_to = form.save(join_invitation)
                 if not new_user.is_active:
+                    join_invitation.accept(new_user)
                     return redirect(redirect_to or 'registration_complete')
                 else:
                     request.muaccount.add_member(new_user)
@@ -94,6 +95,7 @@ def accept_join(request, confirmation_key, registration_form=InvitedRegistration
             }, context_instance=RequestContext(request))
     else:
         request.muaccount.add_member(ex_user)
+        join_invitation.accept(ex_user)
         return _login_message_set_redirect(ex_user, 
                         _("You was added to this site successfully."), '/')
 
