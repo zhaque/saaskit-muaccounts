@@ -22,7 +22,7 @@ else:
 
 
 def redirect_to_muaccount(mua):
-    url = mua.get_absolute_url('muaccounts_account_detail')
+    url = mua.get_absolute_url('muaccounts_manage_general')
     if USE_SSO:
         return HttpResponseRedirect(reverse('sso')+'?next='+url)
     else:
@@ -87,4 +87,4 @@ def remove_member(request, user_id):
     if user in account.members.all():
         account.remove_member(user)
 
-    return HttpResponseRedirect(reverse('muaccounts_account_detail'))
+    return HttpResponseRedirect(reverse('muaccounts_manage_general'))

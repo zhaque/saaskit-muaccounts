@@ -13,41 +13,6 @@ from muaccounts.forms import MUAccountForm, AddUserForm, StylesForm
 
 from muaccounts.views import decorators
 
-@login_required
-def account_detail(request, return_to=None, extra_context={}):
-    # We edit current user's MUAccount
-    account = get_object_or_404(MUAccount, owner=request.user)
-
-    # but if we're inside a MUAccount, we only allow editing that muaccount.
-    if getattr(request, 'muaccount', account) <> account:
-        return HttpResponseForbidden()
-
-    if return_to is None:
-        return_to = reverse('muaccounts.views.account_detail')
-
-    if 'domain' in request.POST:
-        form = MUAccountForm(request.POST, request.FILES, instance=account)
-        if form.is_valid():
-            form.save()
-            return HttpResponseRedirect(return_to)
-    else:
-        form = MUAccountForm(instance=account)
-
-    if 'user' in request.POST:
-        uform = AddUserForm(request.POST, muaccount=account)
-        if uform.is_valid():
-            account.add_member(uform.cleaned_data['user'])
-            return HttpResponseRedirect(return_to)
-    else:
-        uform = AddUserForm()
-
-    ctx = dict(object=account, form=form, add_user_form=uform)
-    ctx.update(extra_context)
-
-    return direct_to_template(
-        request, template='muaccounts/account_detail.html',
-        extra_context=ctx)
-
 @decorators.owner_only
 def advanced_settings(request):
     fields = ['webmaster_tools_code', 'analytics_code']

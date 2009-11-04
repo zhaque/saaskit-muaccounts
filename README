@@ -156,11 +156,6 @@ Table of Contents
     account, redirects user to that account, using django-sso if
     available.  It is not configured in default `urls.py' and should
     be added directly in main site's urlconf.
-  - `muaccounts.views.account_detail' - displays using
-    `muaccounts/account_detail.html' template and validates
-    `muaccounts.forms.MUAccountForm' form, which enables user to
-    configure account's domain.  In supplied `urls.py' this view is
-    named `muaccounts_account_detail'.
   - `muaccounts.views.claim_account' - if `muaccount.owner' is NULL,
     logged in user can "claim" the account, i.e. click a button
     directing to this view, which will send an e-mail to

@@ -15,9 +15,6 @@ def mu_initial(func):
 
 
 urlpatterns = patterns('',
-    url(r'^$', 'muaccounts.views.account_detail',
-        name='muaccounts_account_detail'),
-
     url(r'^remove_member/(?P<user_id>\d+)/$', 'muaccounts.views.remove_member',
         name='muaccounts_remove_member'),
 
