@@ -15,7 +15,7 @@ from muaccounts.views import decorators
 
 @decorators.owner_only
 def advanced_settings(request):
-    fields = ['webmaster_tools_code', 'analytics_code']
+    fields = ['webmaster_tools_code', 'analytics_code', 'yahoo_app_id', 'yahoo_secret']
 
     if request.user.has_perm('muaccounts.can_set_custom_domain'):
         fields.append('domain')
