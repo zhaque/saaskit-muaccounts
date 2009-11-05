@@ -40,8 +40,9 @@ class ThemeWidget(forms.MultiWidget):
         out = []
         ww = iter(rendered_widgets)
         for codename, name, choices in THEMES:
-            out.append('<label>%s %s</label><br />' % (
-                escape(name), ww.next() ) )
+            widget = ww.next()
+            out.append('<div class="ctrlHolder"><label>%s</label>%s</div>' \
+                        % (escape(name), widget ) )
         return ''.join(out)
 
 class ThemeField(forms.MultiValueField):

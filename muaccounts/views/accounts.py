@@ -8,10 +8,18 @@ from django.core.mail import mail_managers
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.views.generic.simple import direct_to_template
+from django.views.generic.create_update import create_object, apply_extra_context
 from django.shortcuts import get_object_or_404
+from django.forms.models import modelform_factory
 from django.template.loader import render_to_string
+from django.utils.translation import ugettext_lazy as _
+
+from frontendadmin.views import add as frontend_add, change as frontend_edit
+from uni_form.helpers import FormHelper, Submit
+
 
 from muaccounts.models import MUAccount
+from muaccounts.forms import MUAccountForm
 
 try:
     import sso
@@ -47,32 +55,43 @@ def claim_account(request):
 
     return direct_to_template(request, 'muaccounts/claim_sent.html')
 
-@login_required
-def create_account(request):
-    # Don't re-create account if one exists.
-    try: mua = request.user.muaccount
-    except MUAccount.DoesNotExist: pass
-    else: return redirect_to_muaccount(mua)
+def _domainify(value):
+    # suggest a free subdomain name based on username.
+    # Domainify username: lowercase, change non-alphanumeric to
+    # dash, strip leading and trailing dashes
+    dn = base = re.sub(r'[^a-z0-9-]+', '-', value.lower()).strip('-')
+    taken_domains = set([
+        mua.domain for mua in MUAccount.objects.filter(
+            domain__contains=base).all() ])
+    i = 0
+    while dn in taken_domains:
+        i += 1
+        dn = '%s-%d' % (base, i)
+    
+    return dn
 
-    if request.method == 'POST':
-        form = MUAccountCreateForm(request.POST)
-        mua = form.get_instance(request.user)
-        if mua:
-            return redirect_to_muaccount(mua)
-    else:
-        # suggest a free subdomain name based on username.
-        # Domainify username: lowercase, change non-alphanumeric to
-        # dash, strip leading and trailing dashes
-        dn = base = re.sub(r'[^a-z0-9-]+', '-', request.user.username.lower()).strip('-')
-        taken_domains = set([
-            mua.domain for mua in MUAccount.objects.filter(
-                domain__contains=base).all() ])
-        i = 0
-        while dn in taken_domains:
-            i += 1
-            dn = '%s-%d' % (base, i)
-        form = MUAccountCreateForm({'subdomain':dn, 'name':request.user.username})
-    return direct_to_template(request, 'muaccounts/create_account.html', {'form':form})
+@login_required
+def create_muaccount(request, form_class=MUAccountForm, initial=None, form_fields=None, form_exclude=None, *args, **kwargs):
+    #request.user.muaccount_member.all()
+    
+    initial = initial or {}
+    initial['owner'] = request.user.id
+    initial['subdomain'] = _domainify(request.user.username)
+    
+    form_exclude = [] if form_exclude is None else list(form_exclude)
+    if not request.user.has_perm('muaccounts.can_set_custom_domain'):
+        form_exclude.append('domain')
+    if not request.user.has_perm('muaccounts.can_set_public_status'):
+        form_exclude.append('is_public')
+    
+    
+    form = modelform_factory(MUAccount, form=form_class, fields=form_fields, exclude=form_exclude)
+    form.helper = FormHelper()
+    form.helper.add_input(Submit('submit',_('Create')))
+    form.helper.add_input(Submit('_cancel',_('Cancel')))
+    
+    return frontend_add(request, form_class=form, initial=initial, *args, **kwargs)
+    
 @login_required
 def remove_member(request, user_id):
     if request.method <> 'POST': return HttpResponseForbidden()
