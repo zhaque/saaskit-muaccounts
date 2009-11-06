@@ -18,6 +18,7 @@ from friends.models import JoinInvitation
 from friends.importer import import_yahoo
 from registration.views import activate
 from registration.models import RegistrationProfile
+from django_authopenid.views import register, register_account as register_account_base
 
 from muaccounts.models import MUAccount
 from muaccounts.forms import ImportVCardForm, InvitedRegistrationForm
@@ -98,6 +99,16 @@ def accept_join(request, confirmation_key, registration_form=InvitedRegistration
         join_invitation.accept(ex_user)
         return _login_message_set_redirect(ex_user, 
                         _("You was added to this site successfully."), '/')
+
+@decorators.public
+def mu_register(request, register_account=register_account_base, *args, **kwargs):
+    
+    def wrapped_register_account(form, openid):
+        user = register_account(form, openid)
+        request.muaccount.add_member(user)
+        return user
+    
+    return register(request, register_account=wrapped_register_account, *args, **kwargs)
 
 @decorators.public
 def mu_activate(request, activation_key,
