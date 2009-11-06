@@ -2,19 +2,20 @@ import re
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import redirect_to_login
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.mail import mail_managers
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.views.generic.simple import direct_to_template
-from django.views.generic.create_update import create_object, apply_extra_context
+from django.views.generic.create_update import create_object, apply_extra_context, lookup_object
 from django.shortcuts import get_object_or_404
 from django.forms.models import modelform_factory
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
 
-from frontendadmin.views import add as frontend_add, change as frontend_edit
+from frontendadmin.views import add as frontend_add, change as frontend_edit, delete as frontend_del
 from uni_form.helpers import FormHelper, Submit
 
 
@@ -72,7 +73,8 @@ def _domainify(value):
 
 @login_required
 def create_muaccount(request, form_class=MUAccountForm, initial=None, form_fields=None, form_exclude=None, *args, **kwargs):
-    #request.user.muaccount_member.all()
+    if MUAccount.objects.filter(owner=request.user).count() >= request.user.quotas.muaccounts:
+        return HttpResponseForbidden()
     
     initial = initial or {}
     initial['owner'] = request.user.id
@@ -91,6 +93,29 @@ def create_muaccount(request, form_class=MUAccountForm, initial=None, form_field
     form.helper.add_input(Submit('_cancel',_('Cancel')))
     
     return frontend_add(request, form_class=form, initial=initial, *args, **kwargs)
+
+@login_required
+def change_muaccount(request, instance_id, form_exclude=None, *args, **kwargs):
+    obj = lookup_object(MUAccount, instance_id, None, None)
+    if obj.owner != request.user:
+        return HttpResponseForbidden()
+    
+    form_exclude = [] if form_exclude is None else list(form_exclude)
+    if not request.user.has_perm('muaccounts.can_set_custom_domain'):
+        form_exclude.append('domain')
+    if not request.user.has_perm('muaccounts.can_set_public_status'):
+        form_exclude.append('is_public')
+    
+    return frontend_edit(request, instance_id=instance_id, form_exclude=form_exclude, *args, **kwargs)
+
+@login_required
+def delete_muaccount(request, instance_id, *args, **kwargs):
+    obj = lookup_object(MUAccount, instance_id, None, None)
+    if obj.owner != request.user:
+        return HttpResponseForbidden()
+    
+    return frontend_del(request, instance_id=instance_id, *args, **kwargs)
+
     
 @login_required
 def remove_member(request, user_id):
