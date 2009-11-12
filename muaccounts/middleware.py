@@ -9,7 +9,7 @@ from django.utils.cache import patch_vary_headers
 from models import MUAccount
 import signals
 
-class MUAccountsMiddleware:
+class MUAccountsMiddleware(object):
     def __init__(self):
         self.urlconf = getattr(settings, 'MUACCOUNTS_ACCOUNT_URLCONF', None)
 
@@ -64,11 +64,11 @@ class MUAccountsMiddleware:
         if not request.muaccount.is_public and not request.user.is_authenticated() \
                and not request.path == reverse('user_signin'):
             return redirect('user_signin')
-
+        
         # force logout of non-member and non-owner from non-public site
         if request.user.is_authenticated() and not request.muaccount.is_public \
                and request.user <> request.muaccount.owner \
-               and request.user not in request.muaccount.members.all():
+               and  not request.muaccount.members.filter(username=request.user.username).count():
             logout(request)
             return redirect(reverse('muaccounts_not_a_member', urlconf=self.urlconf))
 
