@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-setup(name="saaskit-muaccaunts",
+setup(name="saaskit-muaccounts",
            version="0.1.2",
            description="Domain-based multi-user accounts",
            author="CrowdSense",
