@@ -19,4 +19,3 @@ setup(name="saaskit-muaccounts",
         """,
         dependency_links = ['http://dist.repoze.org',],
 )
-

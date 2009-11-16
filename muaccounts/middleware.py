@@ -50,30 +50,32 @@ class MUAccountsMiddleware(object):
             
     def process_view(self, request, view, args, kwargs):
         
+        #check whether request has muaccount attribute
         #check whether request for media files
-        if request.path.startswith('/media/') and settings.DEBUG:
-                return
-        
         #check special anchor is_public
-        if getattr(view, 'is_public', False):
-            return
-    
-        #redirect user to log in if accaunt is not public
+        if not hasattr(request, 'muaccount') \
+        or request.path.startswith(settings.MEDIA_URL) \
+        or getattr(view, 'is_public', False):
+            return 
+        
+        #redirect user to log in if account is not public
         #this check should be in distinct middleware i think
         #as it depends on django_authopenid for example
-        if not request.muaccount.is_public and not request.user.is_authenticated() \
-               and not request.path == reverse('user_signin'):
+        if not request.muaccount.is_public \
+        and not request.user.is_authenticated() \
+        and request.path != reverse('user_signin'):
             return redirect('user_signin')
         
         # force logout of non-member and non-owner from non-public site
         if request.user.is_authenticated() and not request.muaccount.is_public \
-               and request.user <> request.muaccount.owner \
+               and request.user != request.muaccount.owner \
                and  not request.muaccount.members.filter(username=request.user.username).count():
             logout(request)
             return redirect(reverse('muaccounts_not_a_member', urlconf=self.urlconf))
 
         # call request hook
-        for receiver,retval in signals.muaccount_request.send(sender=request, request=request, muaccount=request.muaccount):
+        for receiver, retval in signals.muaccount_request.send(sender=request, 
+                                    request=request, muaccount=request.muaccount):
             if isinstance(retval, HttpResponse):
                 return retval
 
