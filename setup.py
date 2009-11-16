@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 install_requires = [
         'setuptools',
         'Django',
-        'PIL'
+        'PIL==1.1.6',
 ]
 
 setup(name="saaskit-muaccounts",
@@ -17,6 +17,6 @@ setup(name="saaskit-muaccounts",
         entry_points="""
         # -*- Entry points: -*-
         """,
-        dependency_links = [],
+        dependency_links = ['http://dist.repoze.org',],
 )
 
