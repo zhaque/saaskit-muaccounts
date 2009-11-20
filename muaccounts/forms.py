@@ -29,20 +29,13 @@ class SubdomainInput(forms.TextInput):
             super(SubdomainInput,self).render(*args,**kwargs)
             + MUAccount.subdomain_root )
 
-class MUAccountForm(forms.ModelForm):
-    
-    # this displays how to attach a formHelper to your forms class.
-    helper = FormHelper()
-    helper.add_input(Submit('submit',_('Save')))
-    is_multipart = True
+class MUAccountBaseForm(forms.ModelForm):
     
     class Meta:
         model=MUAccount
     
     def __init__(self, *args, **kwargs):
-        super(MUAccountForm, self).__init__(*args, **kwargs)
-        if 'owner' in self.fields:
-            self.fields['owner'].widget = forms.HiddenInput()
+        super(MUAccountBaseForm, self).__init__(*args, **kwargs)
         if 'subdomain' in self.fields:
             self.fields['subdomain'].widget = SubdomainInput()
         if 'theme' in self.fields:
@@ -85,7 +78,7 @@ class MUAccountForm(forms.ModelForm):
                         self._errors['domain'] = forms.util.ErrorList([
                             _('Domain %s does not resolve to a correct IP number.') % d ])
                 else:
-                    if ip <> settings.MUACCOUNTS_IP:
+                    if ip != settings.MUACCOUNTS_IP:
                         self._errors['domain'] = forms.util.ErrorList([
                             _('Domain %(domain)s does not resolve to %(ip)s.') % {'domain':d, 'ip':settings.MUACCOUNTS_IP} ])
         except socket.error, msg:
@@ -94,7 +87,20 @@ class MUAccountForm(forms.ModelForm):
 
         return d
 
-
+    
+class MUAccountForm(MUAccountBaseForm):
+    
+    # this displays how to attach a formHelper to your forms class.
+    helper = FormHelper()
+    helper.add_input(Submit('submit',_('Save')))
+    is_multipart = True
+    
+    def __init__(self, *args, **kwargs):
+        super(MUAccountForm, self).__init__(*args, **kwargs)
+        if 'owner' in self.fields:
+            self.fields['owner'].widget = forms.HiddenInput()
+    
+    
 #===============================================================================
 # class AddUserForm(forms.Form):
 #    user = forms.CharField(label='User',

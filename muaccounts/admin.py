@@ -1,7 +1,8 @@
 from django.contrib import admin
 
-from models import MUAccount
+from muaccounts.models import MUAccount
+from muaccounts.forms import MUAccountBaseForm
 
 class MUAccountAdmin(admin.ModelAdmin):
-    pass
+    form=MUAccountBaseForm
 admin.site.register(MUAccount, MUAccountAdmin)

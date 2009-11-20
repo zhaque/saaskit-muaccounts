@@ -39,8 +39,7 @@ def redirect_to_muaccount(mua):
 
 @login_required
 def claim_account(request):
-    mua = request.muaccount
-    if mua.owner is not None or request.method <> 'POST':
+    if request.muaccount.owner is not None:
         return HttpResponseForbidden()
 
     context = {

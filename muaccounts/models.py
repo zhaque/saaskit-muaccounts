@@ -16,17 +16,17 @@ def _subdomain_root():
         root = '.'+root
     return root
 
-def _muaccount_logo_path(instance, filename):
-    return 'muaccount-logos/%d.jpg' % instance.pk
+#_muaccount_logo_path = lambda instance, filename: 'muaccount-logos/%d.jpg' % instance.pk
 
 class MUAccount(models.Model):
-    owner = models.ForeignKey(User, verbose_name=_('Owner'),
-                            blank=True, null=True, related_name='owned_sites')
+    owner = models.ForeignKey(User, verbose_name=_('Owner'), related_name='owned_sites',
+                              null=True, blank=True)
     members = models.ManyToManyField(User, related_name='muaccount_member', blank=True, verbose_name=_('Members'))
     name = models.CharField(max_length=256, verbose_name=_('Name'))
     tag_line = models.CharField(max_length=256, blank=True)
     about = models.TextField(blank=True)
-    logo = RemovableImageField(upload_to=_muaccount_logo_path, null=True, blank=True)
+    logo = RemovableImageField(upload_to=lambda instance, filename: 'muaccount-logos/%d.jpg' % instance.pk, 
+                               null=True, blank=True)
     domain = models.CharField(max_length=256, unique=True, verbose_name=_('Domain'), blank=True, null=True)
     subdomain = models.CharField(max_length=256, unique=True, verbose_name=_('Subdomain'), null=True)
     is_public = models.BooleanField(default=True, verbose_name=_('Is public'))
