@@ -7,18 +7,18 @@ from django.shortcuts import redirect
 from django.contrib.auth.models import User
 from django.views.generic.simple import direct_to_template
 from django.contrib.auth import login
-from django.http import Http404
-from django.conf import settings
+#from django.http import Http404
+#from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from django.utils.translation import ugettext_lazy as _
 
-import gdata
+#import gdata
 from friends.models import JoinInvitation
 from friends.importer import import_yahoo
-from registration.views import activate
-from registration.models import RegistrationProfile
-from django_authopenid.views import register, register_account as register_account_base
+#from registration.views import activate
+#from registration.models import RegistrationProfile
+#from django_authopenid.views import register, register_account as register_account_base
 
 from muaccounts.models import MUAccount
 from muaccounts.forms import ImportVCardForm, InvitedRegistrationForm
@@ -100,27 +100,29 @@ def accept_join(request, confirmation_key, registration_form=InvitedRegistration
         return _login_message_set_redirect(ex_user, 
                         _("You was added to this site successfully."), '/')
 
-@decorators.public
-def mu_register(request, register_account=register_account_base, *args, **kwargs):
-    
-    def wrapped_register_account(form, openid):
-        user = register_account(form, openid)
-        request.muaccount.add_member(user)
-        return user
-    
-    return register(request, register_account=wrapped_register_account, *args, **kwargs)
-
-@decorators.public
-def mu_activate(request, activation_key,
-             template_name='registration/activate.html',
-             extra_context=None):
-    activation_key = activation_key.lower() # Normalize before trying anything with it.
-    account, redirect_to = RegistrationProfile.objects.activate_user(activation_key)
-    if not account:
-        raise Http404('Wrong or expired activation key.')
-    
-    request.muaccount.add_member(account)
-    return activate(request, activation_key, template_name, extra_context)
+#===============================================================================
+# @decorators.public
+# def mu_register(request, register_account=register_account_base, *args, **kwargs):
+#    
+#    def wrapped_register_account(form, openid):
+#        user = register_account(form, openid)
+#        request.muaccount.add_member(user)
+#        return user
+#    
+#    return register(request, register_account=wrapped_register_account, *args, **kwargs)
+# 
+# @decorators.public
+# def mu_activate(request, activation_key,
+#             template_name='registration/activate.html',
+#             extra_context=None):
+#    activation_key = activation_key.lower() # Normalize before trying anything with it.
+#    account, redirect_to = RegistrationProfile.objects.activate_user(activation_key)
+#    if not account:
+#        raise Http404('Wrong or expired activation key.')
+#    
+#    request.muaccount.add_member(account)
+#    return activate(request, activation_key, template_name, extra_context)
+#===============================================================================
     
 @decorators.owner_only
 def contacts(request, vcard_form=ImportVCardForm, cvs_form=ImportCSVContactsForm, 

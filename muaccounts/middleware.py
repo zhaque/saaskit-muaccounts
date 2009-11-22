@@ -5,6 +5,7 @@ from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
 from django.http import HttpResponse, HttpResponseRedirect
 from django.utils.cache import patch_vary_headers
+from django.contrib.auth.views import redirect_to_login
 
 from models import MUAccount
 import signals
@@ -24,8 +25,7 @@ class MUAccountsMiddleware(object):
                                        self.port_suffix ))
 
     def process_request(self, request):
-        host = request.META.get('HTTP_HOST',None)
-        if host is None: return # Pages CMS middleware does some evil magic in admin interface
+        host = request.get_host()
 
         # strip port suffix if present
         if self.port_suffix and host.endswith(self.port_suffix):
@@ -62,9 +62,8 @@ class MUAccountsMiddleware(object):
         #this check should be in distinct middleware i think
         #as it depends on django_authopenid for example
         if not request.muaccount.is_public \
-        and not request.user.is_authenticated() \
-        and request.path != reverse('user_signin'):
-            return redirect('user_signin')
+        and not request.user.is_authenticated() :
+            return redirect_to_login(request.get_full_path())
         
         # force logout of non-member and non-owner from non-public site
         if request.user.is_authenticated() and not request.muaccount.is_public \
