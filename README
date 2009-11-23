@@ -124,9 +124,9 @@ Table of Contents
   instance:
   - sets `request.muaccount' to that instance (it can be later used by
     views and, with `request' context processor, in templates);
-  - immediately logs out (and redirects to reverse URL lookup of
-    `muaccounts_not_a_member') any `auth.models.User' that is not this
-    account's owner or memeber, unless `request.muaccount.is_public'
+  - immediately redirects to reverse URL lookup of
+    `join_request' any `auth.models.User' that is not this
+    account's owner or member, unless `request.muaccount.is_public'
     is true;
   - if `MUACCOUNTS_ACCOUNT_URLCONF' setting is set, sets
     `request.urlconf' to its value, allowing single project to display

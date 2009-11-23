@@ -19,7 +19,7 @@ from registration.signals import user_registered, user_activated
 from emailconfirmation.models import EmailAddress
 from uni_form.helpers import FormHelper, Submit, Reset, Layout, Fieldset
 
-from muaccounts.models import MUAccount
+from muaccounts.models import MUAccount, JoinRequest
 from themes import ThemeField
 
 class SubdomainInput(forms.TextInput):
@@ -100,6 +100,13 @@ class MUAccountForm(MUAccountBaseForm):
         if 'owner' in self.fields:
             self.fields['owner'].widget = forms.HiddenInput()
     
+class AddMemberRequestForm(forms.Form):
+    # this displays how to attach a formHelper to your forms class.
+    helper = FormHelper()
+    helper.add_input(Submit('submit',_('Send request')))
+    
+    notes = forms.CharField(label=_("Notes"), initial=_("Please, add me!"), 
+                            widget=forms.Textarea)
     
 #===============================================================================
 # class AddUserForm(forms.Form):

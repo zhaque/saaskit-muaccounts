@@ -3,15 +3,17 @@
 
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render_to_response
 from django.contrib.auth.models import User
 from django.views.generic.simple import direct_to_template
-from django.contrib.auth import login
-#from django.http import Http404
+from django.views.generic.create_update import apply_extra_context
+from django.contrib.auth import login, REDIRECT_FIELD_NAME
+from django.contrib.auth.decorators import login_required
+from django.http import Http404
 #from django.conf import settings
 from django.core.urlresolvers import reverse
 
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext, ugettext_lazy as _
 
 #import gdata
 from friends.models import JoinInvitation
@@ -21,22 +23,26 @@ from friends.importer import import_yahoo
 #from django_authopenid.views import register, register_account as register_account_base
 
 from muaccounts.models import MUAccount
-from muaccounts.forms import ImportVCardForm, InvitedRegistrationForm
+from muaccounts.forms import ImportVCardForm, InvitedRegistrationForm, AddMemberRequestForm
 from muaccounts.forms import MuJoinRequestForm, ImportCSVContactsForm, ImportGoogleContactsForm
 from muaccounts.views import decorators
 
+@login_required
 @decorators.owner_only
 def member_list(request, template='friends/member_list.html'):
     account = get_object_or_404(MUAccount, owner=request.user)
     
-    joins_sent = request.user.join_from.all().order_by("-sent")
+    invitations_sent = request.user.join_from.all().order_by("-sent")
+    joins_received = request.muaccount.join_requests.all().order_by("state", "-created")
     
     return direct_to_template(request, template=template, extra_context={
         'account': account,
         'member_list': account.members.all(),
-        "joins_sent": joins_sent,
+        "invitations_sent": invitations_sent,
+        "joins_received": joins_received,
     })
 
+@login_required
 @decorators.owner_only
 def invite(request, form_class=MuJoinRequestForm, initial=None, **kwargs):
     template_name = kwargs.get("template_name", "friends/invite.html")
@@ -123,7 +129,8 @@ def accept_join(request, confirmation_key, registration_form=InvitedRegistration
 #    request.muaccount.add_member(account)
 #    return activate(request, activation_key, template_name, extra_context)
 #===============================================================================
-    
+
+@login_required
 @decorators.owner_only
 def contacts(request, vcard_form=ImportVCardForm, cvs_form=ImportCSVContactsForm, 
              google_import_form=ImportGoogleContactsForm,
@@ -175,3 +182,41 @@ def contacts(request, vcard_form=ImportVCardForm, cvs_form=ImportCSVContactsForm
                                            'action': action, 'auth_url': auth_url})
             
     return render_to_response(template_name, context, context_instance=RequestContext(request))
+
+
+@login_required
+@decorators.public
+def join_request(request, form_class=AddMemberRequestForm, template_name="join_request.html",
+                 extra_context=None):
+    request_obj, form = None, None
+    try:
+        request_obj = request.user.join_requests.get(muaccount = request.muaccount)
+    except request.user.join_requests.model.DoesNotExist:
+        if request.method == "POST":
+            form = form_class(request.POST)
+            if form.is_valid():
+                request_obj = request.user.join_requests.create(user=request.user, 
+                                                               muaccount=request.muaccount,
+                                                               notes=form.cleaned_data['notes'])
+                request.user.message_set.create(message=ugettext("Your request was posted. Site's owner will decide."))
+                form = None
+        else:
+            form = form_class()
+        
+    context = {'form': form, 'join_request': request_obj}
+    apply_extra_context(extra_context or {}, context)
+    
+    return render_to_response(template_name, context, context_instance=RequestContext(request))
+
+@login_required
+@decorators.owner_only
+def change_join_request_state(request, user_id, state):
+    jr = get_object_or_404(request.muaccount.join_requests.all(), user__id=user_id)
+    if state == "join":
+        jr.join()
+    elif state == "reject":
+        jr.reject()
+    else:
+        raise Http404()
+    
+    return redirect('muaccounts_member_list')

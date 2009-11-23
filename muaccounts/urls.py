@@ -1,7 +1,4 @@
 from django.conf.urls.defaults import *
-from django.views.generic.simple import direct_to_template
-# to main site urlconf add also:
-# (r'^create/$', 'muaccounts.views.create_account'),
 
 from muaccounts.views import members
 
@@ -43,5 +40,9 @@ urlpatterns = patterns('',
     url(r'^bbauth/login/$', 'muaccounts.views.bbauth.login', name="bbauth_login"),
     url(r'^bbauth/success/$', 'muaccounts.views.bbauth.success', name="bbauth_success"),
     url(r'^bbauth/logout/$', 'muaccounts.views.bbauth.logout', name="bbauth.logout"),
+    
+    url(r'^join_request/$', 'muaccounts.views.members.join_request', name='join_request'),
+    url(r'^proceed_join_request/(?P<state>join|reject)/(?P<user_id>\d+)/$', 
+        'muaccounts.views.members.change_join_request_state', name='proceed_join_request'),
     
 )

@@ -66,12 +66,15 @@ class MUAccountsMiddleware(object):
             return redirect_to_login(request.get_full_path())
         
         # force logout of non-member and non-owner from non-public site
-        if request.user.is_authenticated() and not request.muaccount.is_public \
+        if request.user.is_authenticated() \
                and request.user != request.muaccount.owner \
                and  not request.muaccount.members.filter(username=request.user.username).count():
-            logout(request)
-            return redirect(reverse('muaccounts_not_a_member', urlconf=self.urlconf))
-
+            
+            if request.muaccount.is_public or request.muaccount.owner is None:
+                request.muaccount.add_member(request.user)
+            else:
+                return redirect(reverse('join_request', urlconf=self.urlconf))
+        
         # call request hook
         for receiver, retval in signals.muaccount_request.send(sender=request, 
                                     request=request, muaccount=request.muaccount):

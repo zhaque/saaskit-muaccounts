@@ -74,3 +74,43 @@ class MUAccount(models.Model):
     def remove_member(self, user):
         self.members.remove(user)
         signals.remove_member.send(self, user=user)
+
+class JoinRequest(models.Model):
+    
+    STATE_INIT = 1
+    STATE_JOINED = 2
+    STATE_REJECTED = 3
+    
+    STATE_CHOICES = (
+        (STATE_INIT, _("waiting")),
+        (STATE_JOINED, _("member was added")),
+        (STATE_REJECTED, _("Owner rejected request")),
+    )
+    
+    user = models.ForeignKey(User, related_name="join_requests")
+    muaccount = models.ForeignKey(MUAccount, related_name="join_requests")
+    notes = models.TextField(_("notes"), blank=True)
+    state = models.IntegerField(_('state'), choices=STATE_CHOICES, default=STATE_INIT, editable=False)
+    created = models.DateTimeField(auto_now=True, editable=False)
+    
+    class Meta:
+        verbose_name = _('join request')
+        verbose_name_plural = _('join requests')
+        unique_together = (('user', 'muaccount'),)
+        ordering = ('-created',)
+    
+    def join(self):
+        if self.state == self.STATE_INIT:
+            self.muaccount.add_member(self.user)
+            self.state = self.STATE_JOINED
+            self.save()
+        else:
+            raise ValueError("Only just initialized request can be accepted.")
+    
+    def reject(self):
+        if self.state == self.STATE_INIT:
+            self.state = self.STATE_REJECTED
+            self.save()
+        else:
+            raise ValueError("Only just initialized request can be rejected.")
+        
