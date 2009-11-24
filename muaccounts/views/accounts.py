@@ -21,21 +21,7 @@ from uni_form.helpers import FormHelper, Submit
 
 from muaccounts.models import MUAccount
 from muaccounts.forms import MUAccountForm
-
-try:
-    import sso
-except ImportError:
-    USE_SSO = False
-else:
-    USE_SSO = getattr(settings, 'MUACCOUNTS_USE_SSO', True)
-
-
-def redirect_to_muaccount(mua):
-    url = mua.get_absolute_url('muaccounts_manage_general')
-    if USE_SSO:
-        return HttpResponseRedirect(reverse('sso')+'?next='+url)
-    else:
-        return HttpResponseRedirect(url)
+from muaccounts.utils import USE_SSO
 
 @login_required
 def claim_account(request):

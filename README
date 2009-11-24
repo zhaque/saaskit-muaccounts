@@ -35,10 +35,7 @@ Table of Contents
 2 Settings
 ~~~~~~~~~~
   Following Django settings are read by the application:
-  - `MUACCOUNTS_ACCOUNT_URLCONF' - if set, `request.urlconf' is set to
-    this value when MUAccount's domain is accessed.  This breaks
-    django-debug-toolbar and misleads reverse URL resolver (main
-    urlconf is always used for reverse URL resolving).
+  - `MUACCOUNTS_MAIN_URLCONF' - name of URLconf module for main site.
   - `MUACCOUNTS_DEFAULT_DOMAIN' - Default domain name, on which "main"
     (non-user) site is hosted.  Used to prevent redirection to
     `MUACCOUNTS_DEFAULT_URL' when `MUAccountsMiddleware' is used both

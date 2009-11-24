@@ -1,4 +1,8 @@
 from django import template
+from django.conf import settings
+from django.utils.encoding import smart_str
+
+from muaccounts.utils import construct_main_site_url
 
 register = template.Library()
 
@@ -32,3 +36,55 @@ def sites_owned(parser, token):
 @register.tag
 def member_of(parser, token):
     return sites_list(parser, token, 'muaccount_member')
+
+
+@register.tag
+def main_site_url(parser, token):
+    res = template.defaulttags.url(parser, token)
+    if isinstance(res, template.defaulttags.URLNode):
+        return MainURLNode(res.view_name, res.args, res.kwargs, res.asvar)
+    else:
+        return res
+
+class MainURLNode(template.defaulttags.URLNode):
+    
+    def render(self, context):
+        """ copy of default tag URLNode render method. Just url_conf was changed """ 
+        from django.core.urlresolvers import reverse, NoReverseMatch
+        args = [arg.resolve(context) for arg in self.args]
+        kwargs = dict([(smart_str(k,'ascii'), v.resolve(context))
+                       for k, v in self.kwargs.items()])
+
+        # Try to look up the URL twice: once given the view name, and again
+        # relative to what we guess is the "main" app. If they both fail,
+        # re-raise the NoReverseMatch unless we're using the
+        # {% url ... as var %} construct in which cause return nothing.
+        url = ''
+        try:
+            url = reverse(self.view_name, urlconf=settings.MUACCOUNTS_MAIN_URLCONF, 
+                          args=args, kwargs=kwargs, current_app=context.current_app)
+        except NoReverseMatch, e:
+            if settings.SETTINGS_MODULE:
+                project_name = settings.SETTINGS_MODULE.split('.')[0]
+                try:
+                    url = reverse(project_name + '.' + self.view_name, 
+                                  urlconf=settings.MUACCOUNTS_MAIN_URLCONF,
+                                  args=args, kwargs=kwargs, current_app=context.current_app)
+                except NoReverseMatch:
+                    if self.asvar is None:
+                        # Re-raise the original exception, not the one with
+                        # the path relative to the project. This makes a
+                        # better error message.
+                        raise e
+            else:
+                if self.asvar is None:
+                    raise e
+        
+        url  = construct_main_site_url(url)
+        
+        if self.asvar:
+            context[self.asvar] = url
+            return ''
+        else:
+            return url
+    

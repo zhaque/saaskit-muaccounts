@@ -12,7 +12,6 @@ import signals
 
 class MUAccountsMiddleware(object):
     def __init__(self):
-        self.urlconf = getattr(settings, 'MUACCOUNTS_ACCOUNT_URLCONF', None)
 
         if hasattr(settings, 'MUACCOUNTS_PORT'):
             self.port_suffix = ':%d' % settings.MUACCOUNTS_PORT
@@ -45,8 +44,6 @@ class MUAccountsMiddleware(object):
         else:
             # set up request parameters
             request.muaccount = mua
-            if self.urlconf:
-                request.urlconf = self.urlconf
             
     def process_view(self, request, view, args, kwargs):
         
@@ -73,7 +70,7 @@ class MUAccountsMiddleware(object):
             if request.muaccount.is_public or request.muaccount.owner is None:
                 request.muaccount.add_member(request.user)
             else:
-                return redirect(reverse('join_request', urlconf=self.urlconf))
+                return redirect(reverse('join_request'))
         
         # call request hook
         for receiver, retval in signals.muaccount_request.send(sender=request, 
