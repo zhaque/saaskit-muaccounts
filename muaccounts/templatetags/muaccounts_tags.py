@@ -1,8 +1,9 @@
 from django import template
 from django.conf import settings
+from django.template import TemplateSyntaxError
 from django.utils.encoding import smart_str
 
-from muaccounts.utils import construct_main_site_url
+from muaccounts.utils import construct_main_site_url, sso_wrap, USE_SSO
 
 register = template.Library()
 
@@ -87,4 +88,56 @@ class MainURLNode(template.defaulttags.URLNode):
             return ''
         else:
             return url
+
+
+@register.tag
+def user_site_url(parser, token):
+    """ alomost copy of default tag url. just added muaccount parameter """
+    bits = token.split_contents()
+    if len(bits) < 3:
+        raise TemplateSyntaxError("'%s' takes at least two arguments"
+                                  " (path to a view and muaccount)" % bits[0])
+    viewname = bits[1]
+    muaccount = parser.compile_filter(bits[2])
+    args = []
+    kwargs = {}
+    asvar = None
+
+    if len(bits) > 3:
+        bits = iter(bits[3:])
+        for bit in bits:
+            if bit == 'as':
+                asvar = bits.next()
+                break
+            else:
+                for arg in bit.split(","):
+                    if '=' in arg:
+                        k, v = arg.split('=', 1)
+                        k = k.strip()
+                        kwargs[k] = parser.compile_filter(v)
+                    elif arg:
+                        args.append(parser.compile_filter(arg))
+    return UserSiteURLNode(muaccount, viewname, args, kwargs, asvar)
     
+class UserSiteURLNode(template.defaulttags.URLNode):
+    
+    def __init__(self, muaccount, *args, **kwargs):
+        super(UserSiteURLNode, self).__init__(*args, **kwargs)
+        self.muaccount = muaccount
+    
+    def render(self, context):
+        args = [arg.resolve(context) for arg in self.args]
+        print "args --> ", args
+        kwargs = dict([(smart_str(k,'ascii'), v.resolve(context))
+                       for k, v in self.kwargs.items()])
+        
+        muaccount = self.muaccount.resolve(context)
+        
+        url = muaccount.get_absolute_url(self.view_name, args, kwargs)
+        url = sso_wrap(url) if USE_SSO else url 
+        
+        if self.asvar:
+            context[self.asvar] = url
+            return ''
+        else:
+            return url
