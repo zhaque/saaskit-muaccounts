@@ -159,7 +159,6 @@ class ImportCSVContactsForm(forms.Form):
             for row in csv.reader(self.cleaned_data['csv_file']):
                 pass
         except csv.Error, msg:
-            print msg
             raise forms.ValidationError(_("Error while reading. Check your file."))
                 
         return self.cleaned_data['csv_file']
@@ -306,3 +305,22 @@ class InvitedRegistrationForm(RegistrationFormUniqueEmail):
             EmailAddress(user=new_user, email=email, primary=True).save()
         
         return new_user, self.cleaned_data.get('redirect_to')
+
+#Muaccount specific content
+
+class AddFormMixin(object):
+    
+    def __init__(self, *args, **kwargs):
+        super(AddFormMixin, self).__init__(*args, **kwargs)
+        self.fields['muaccount'].widget = forms.HiddenInput()
+
+
+class ChangeFormMixin(object):
+    
+    def save(self, commit=True):
+        if self.instance.pk is not None and self.instance.muaccount is None:
+            #flush instance
+            self.instance = self.instance.__class__()
+        
+        return super(ChangeFormMixin, self).save(commit)
+    save.alters_data = True

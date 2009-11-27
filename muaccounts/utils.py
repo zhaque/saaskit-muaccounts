@@ -4,6 +4,7 @@ from django.contrib.sites.models import Site
 from django.utils.http import urlquote_plus
 from django.core.urlresolvers import reverse
 from django.contrib.auth import REDIRECT_FIELD_NAME
+from django.db.models.query import Q
 
 try:
     import sso
@@ -24,3 +25,10 @@ def construct_main_site_url(location, sso_wraped=USE_SSO):
 
 def sso_wrap(url):
     return "%s?%s=%s" % (reverse('sso'), REDIRECT_FIELD_NAME, urlquote_plus(url))
+
+def mu_queryset(muaccount, queryset, field):
+    customized = queryset.filter(muaccount=muaccount)
+    return queryset.filter(Q(muaccount__exact=None) | Q(muaccount=muaccount))\
+                .exclude(muaccount__exact=None, 
+                 **{'%s__in' % field: customized.values_list(field, flat=True),})
+    

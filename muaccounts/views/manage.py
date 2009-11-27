@@ -23,9 +23,6 @@ def advanced_settings(request, form_class=MUAccountForm):
     if request.user.has_perm('muaccounts.can_set_custom_domain'):
         fields.append('domain')
 
-    if request.user.has_perm('muaccounts.can_set_adsense_code'):
-        fields.append('adsense_code')
-
     return update_object(request,
         form_class=modelform_factory(MUAccount, form=form_class, fields=fields),
         object_id=request.muaccount.pk,

@@ -34,7 +34,6 @@ class MUAccount(models.Model):
 
     analytics_code = models.TextField(blank=True)
     webmaster_tools_code = models.CharField(max_length=150, blank=True)
-    adsense_code = models.TextField(blank=True)
     
     yahoo_app_id = models.CharField(_("yahoo application ID"), max_length=150, blank=True)
     yahoo_secret = models.CharField(_("yahoo shared secret"), max_length=150, blank=True)
@@ -45,7 +44,6 @@ class MUAccount(models.Model):
         permissions = (
             ('can_set_custom_domain', 'Can set custom domain'),
             ('can_set_public_status', 'Can set public status'),
-            ('can_set_adsense_code', 'Can set AdSense code'),
         )
 
     def __unicode__(self):
