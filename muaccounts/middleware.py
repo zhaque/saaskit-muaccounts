@@ -6,6 +6,7 @@ from django.shortcuts import redirect
 from django.http import HttpResponse, HttpResponseRedirect
 from django.utils.cache import patch_vary_headers
 from django.contrib.auth.views import redirect_to_login
+from django.utils.translation import ugettext, ugettext_lazy as _
 
 from models import MUAccount
 import signals
@@ -69,6 +70,7 @@ class MUAccountsMiddleware(object):
             
             if request.muaccount.is_public or request.muaccount.owner is None:
                 request.muaccount.add_member(request.user)
+                request.user.message_set.create(message=ugettext("You was added to this site successfully."))
             else:
                 return redirect(reverse('join_request'))
         

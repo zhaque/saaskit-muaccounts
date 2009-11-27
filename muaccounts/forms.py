@@ -288,24 +288,6 @@ class MuJoinRequestForm(forms.Form):
             user.message_set.create(message=_("Invitation to join sent to %(email)s") 
                                                 % {'email':contact.email})
 
-class InvitedRegistrationForm(RegistrationFormUniqueEmail):
-    
-    def save(self, join_invitation):
-        email = self.cleaned_data['email']
-        
-        same_email = join_invitation.contact.email == email
-        
-        if same_email:
-            new_user = User.objects.create_user(self.cleaned_data['username'], email=email, password=self.cleaned_data['password1'])
-            user_registered.send(sender=User, user=new_user)
-            user_activated.send(sender=User, user=new_user)
-            EmailAddress(user=new_user, email=email, verified=True, primary=True).save()
-        else:
-            new_user = super(InvitedRegistrationForm, self).save()
-            EmailAddress(user=new_user, email=email, primary=True).save()
-        
-        return new_user, self.cleaned_data.get('redirect_to')
-
 #Muaccount specific content
 
 class AddFormMixin(object):

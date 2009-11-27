@@ -15,15 +15,11 @@ from django.core.urlresolvers import reverse
 
 from django.utils.translation import ugettext, ugettext_lazy as _
 
-#import gdata
 from friends.models import JoinInvitation
 from friends.importer import import_yahoo
-#from registration.views import activate
-#from registration.models import RegistrationProfile
-#from django_authopenid.views import register, register_account as register_account_base
 
 from muaccounts.models import MUAccount
-from muaccounts.forms import ImportVCardForm, InvitedRegistrationForm, AddMemberRequestForm
+from muaccounts.forms import ImportVCardForm, AddMemberRequestForm
 from muaccounts.forms import MuJoinRequestForm, ImportCSVContactsForm, ImportGoogleContactsForm
 from muaccounts.views import decorators
 
@@ -64,71 +60,18 @@ def invite(request, form_class=MuJoinRequestForm, initial=None, **kwargs):
         "join_request_form": join_request_form,
         }, context_instance=RequestContext(request))
 
+@login_required
 @decorators.public
-def accept_join(request, confirmation_key, registration_form=InvitedRegistrationForm,
-                registration_template_name='registration/registration_form.html'):
+def accept_join(request, confirmation_key):
     join_invitation = get_object_or_404(JoinInvitation, confirmation_key = confirmation_key.lower())
     
-    if tuple(request.muaccount.members.filter(email__iexact=join_invitation.contact.email)):
-        return redirect('/') #May be we should show a message, but it shouldn't happens
-    
-    def _login_message_set_redirect(user, message, redirect_to):
-        user.backend='django.contrib.auth.backends.ModelBackend'
-        login(request, user)
-        user.message_set.create(message=unicode(message))
-        
-        return redirect(redirect_to)
-    
-    try:
-        ex_user = User.objects.get(email__iexact=join_invitation.contact.email)
-    except User.DoesNotExist:
-        if request.method == "POST":
-            form = registration_form(request.POST)
-            if form.is_valid():
-                new_user, redirect_to = form.save(join_invitation)
-                if not new_user.is_active:
-                    join_invitation.accept(new_user)
-                    return redirect(redirect_to or 'registration_complete')
-                else:
-                    request.muaccount.add_member(new_user)
-                    return _login_message_set_redirect(new_user, 
-                                       _("You was registered successfully."), 
-                                       redirect_to or '/')
-        else:
-            form = registration_form(initial={"email": join_invitation.contact.email})
-        
-        return render_to_response(registration_template_name, {
-                "form": form,
-            }, context_instance=RequestContext(request))
+    if request.user.email == join_invitation.contact.email:
+        join_invitation.accept(request.user)
+        request.muaccount.add_member(request.user)
+        request.user.message_set.create(message=ugettext("You was added to this site successfully."))
+        return redirect('/')
     else:
-        request.muaccount.add_member(ex_user)
-        join_invitation.accept(ex_user)
-        return _login_message_set_redirect(ex_user, 
-                        _("You was added to this site successfully."), '/')
-
-#===============================================================================
-# @decorators.public
-# def mu_register(request, register_account=register_account_base, *args, **kwargs):
-#    
-#    def wrapped_register_account(form, openid):
-#        user = register_account(form, openid)
-#        request.muaccount.add_member(user)
-#        return user
-#    
-#    return register(request, register_account=wrapped_register_account, *args, **kwargs)
-# 
-# @decorators.public
-# def mu_activate(request, activation_key,
-#             template_name='registration/activate.html',
-#             extra_context=None):
-#    activation_key = activation_key.lower() # Normalize before trying anything with it.
-#    account, redirect_to = RegistrationProfile.objects.activate_user(activation_key)
-#    if not account:
-#        raise Http404('Wrong or expired activation key.')
-#    
-#    request.muaccount.add_member(account)
-#    return activate(request, activation_key, template_name, extra_context)
-#===============================================================================
+        raise Http404('wrong e-mail')
 
 @login_required
 @decorators.owner_only
