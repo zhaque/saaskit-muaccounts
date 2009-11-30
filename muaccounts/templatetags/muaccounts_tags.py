@@ -127,7 +127,6 @@ class UserSiteURLNode(template.defaulttags.URLNode):
     
     def render(self, context):
         args = [arg.resolve(context) for arg in self.args]
-        print "args --> ", args
         kwargs = dict([(smart_str(k,'ascii'), v.resolve(context))
                        for k, v in self.kwargs.items()])
         
