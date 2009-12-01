@@ -4,6 +4,7 @@ from django.template import TemplateSyntaxError
 from django.utils.encoding import smart_str
 
 from muaccounts.utils import construct_main_site_url, sso_wrap, USE_SSO
+from muaccounts.models import MUAccount
 
 register = template.Library()
 
@@ -37,6 +38,33 @@ def sites_owned(parser, token):
 @register.tag
 def member_of(parser, token):
     return sites_list(parser, token, 'muaccount_member')
+
+
+class MuaccountNode(template.Node):
+
+    def __init__(self, muaccount_id, var_name):
+        self.muaccount_id = muaccount_id
+        self.var_name = var_name
+
+    def render(self, context):
+        muaccount_id = self.muaccount_id.resolve(context)
+        context[self.var_name] = MUAccount.objects.get(id=muaccount_id)
+        return ''
+
+@register.tag
+def get_muaccount(parser, token):
+    """
+    Example:
+    
+        {% get_muaccount 1 as first_mua %}
+    """
+    bits = token.split_contents()
+    if len(bits) == 4:
+        if bits[2] != 'as':
+            raise template.TemplateSyntaxError, "Second argument to '%s' tag must be 'as'" % bits[0]
+        return MuaccountNode(parser.compile_filter(bits[1]), bits[3])
+    else:
+        raise template.TemplateSyntaxError, "'%s' tag takes four arguments" % bits[0]
 
 
 @register.tag
