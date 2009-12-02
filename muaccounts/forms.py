@@ -108,37 +108,6 @@ class AddMemberRequestForm(forms.Form):
     notes = forms.CharField(label=_("Notes"), initial=_("Please, add me!"), 
                             widget=forms.Textarea)
     
-#===============================================================================
-# class AddUserForm(forms.Form):
-#    user = forms.CharField(label='User',
-#                           help_text='Enter login name or e-mail address',
-#                           )
-#    def __init__(self, *args, **kwargs):
-#        try: self.muaccount = kwargs['muaccount']
-#        except KeyError: pass
-#        else: del kwargs['muaccount']
-#        super(AddUserForm, self).__init__(*args, **kwargs)
-# 
-#    def clean_user(self):
-#        un = self.cleaned_data['user']
-#        try:
-#            if '@' in un: u = User.objects.get(email=un)
-#            else: u = User.objects.get(username=un)
-#        except User.DoesNotExist:
-#            raise forms.ValidationError(_('User does not exist.'))
-#        if u == self.muaccount.owner:
-#            raise forms.ValidationError(_('You are already the plan owner.'))
-#        return u
-# 
-#    def clean(self):
-#        try:
-#            limit = self.muaccount.owner.quotas.muaccount_members
-#        except AttributeError: pass
-#        else:
-#            if limit <= len(self.muaccount.members.all()):
-#                raise forms.ValidationError(_("Member limit reached."))
-#        return self.cleaned_data
-#===============================================================================
 
 class ImportVCardForm(forms.Form):
 
@@ -147,6 +116,7 @@ class ImportVCardForm(forms.Form):
     def save(self, user):
         imported, total = import_vcards(self.cleaned_data["vcard_file"].content, user)
         return imported, total
+
 
 class ImportCSVContactsForm(forms.Form):
     
