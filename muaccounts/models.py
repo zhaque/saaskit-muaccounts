@@ -37,7 +37,9 @@ class MUAccount(models.Model):
     
     yahoo_app_id = models.CharField(_("yahoo application ID"), max_length=150, blank=True)
     yahoo_secret = models.CharField(_("yahoo shared secret"), max_length=150, blank=True)
-
+    
+    language = models.CharField(_('language'), choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE)
+    
     subdomain_root = _subdomain_root()
 
     class Meta:
