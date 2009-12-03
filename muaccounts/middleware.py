@@ -7,6 +7,9 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.utils.cache import patch_vary_headers
 from django.contrib.auth.views import redirect_to_login
 from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.cache import patch_vary_headers
+from django.utils import translation
+import django.middleware.locale
 
 from models import MUAccount
 import signals
@@ -85,3 +88,17 @@ class MUAccountsMiddleware(object):
         if getattr(request, "urlconf", None):
             patch_vary_headers(response, ('Host',))
         return response
+
+
+class LocaleMiddleware(django.middleware.locale.LocaleMiddleware):
+    """
+    This is a middleware that gets language from current muaccount.
+    """
+
+    def process_request(self, request):
+        if hasattr(request, 'muaccount'):
+            language = request.muaccount.language
+            translation.activate(language)
+            request.LANGUAGE_CODE = translation.get_language()
+        else:
+            super(LocaleMiddleware, self).process_request(request)
