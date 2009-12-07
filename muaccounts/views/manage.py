@@ -35,7 +35,7 @@ def advanced_settings(request, form_class=MUAccountForm):
 
 @decorators.owner_only
 def general_settings(request, form_class=MUAccountForm):
-    fields = ['name', 'tag_line', 'about', 'logo', 'language']
+    fields = ['name', 'tag_line', 'about', 'logo', 'language', 'is_bounty']
     exclude = ('theme',)
     if request.user.has_perm('muaccounts.can_set_public_status'):
         fields.append('is_public')

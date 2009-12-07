@@ -16,8 +16,6 @@ def _subdomain_root():
         root = '.'+root
     return root
 
-#_muaccount_logo_path = lambda instance, filename: 'muaccount-logos/%d.jpg' % instance.pk
-
 class MUAccount(models.Model):
     owner = models.ForeignKey(User, verbose_name=_('Owner'), related_name='owned_sites',
                               null=True, blank=True)
@@ -39,6 +37,7 @@ class MUAccount(models.Model):
     yahoo_secret = models.CharField(_("yahoo shared secret"), max_length=150, blank=True)
     
     language = models.CharField(_('language'), max_length=10, choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE)
+    is_bounty = models.BooleanField(_('Bounty flag'), default=True)
     
     subdomain_root = _subdomain_root()
 
