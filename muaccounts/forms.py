@@ -19,7 +19,7 @@ from registration.signals import user_registered, user_activated
 from emailconfirmation.models import EmailAddress
 from uni_form.helpers import FormHelper, Submit, Reset, Layout, Fieldset
 
-from muaccounts.models import MUAccount, JoinRequest
+from muaccounts.models import MUAccount, InvitationRequest
 from themes import ThemeField
 
 class SubdomainInput(forms.TextInput):
@@ -100,15 +100,21 @@ class MUAccountForm(MUAccountBaseForm):
         if 'owner' in self.fields:
             self.fields['owner'].widget = forms.HiddenInput()
     
-class AddMemberRequestForm(forms.Form):
+class InvitationRequestForm(forms.ModelForm):
     # this displays how to attach a formHelper to your forms class.
     helper = FormHelper()
     helper.add_input(Submit('submit',_('Send request')))
     
-    notes = forms.CharField(label=_("Notes"), initial=_("Please, add me!"), 
-                            widget=forms.Textarea)
+    def __init__(self, *args, **kwargs):
+        super(InvitationRequestForm, self).__init__(*args, **kwargs)
+        if 'muaccount' in self.fields:
+            self.fields['muaccount'].widget = forms.HiddenInput()
     
-
+    class Meta:
+        model = InvitationRequest
+        fields = ('email', 'notes', 'muaccount')
+    
+    
 class ImportVCardForm(forms.Form):
 
     vcard_file = forms.FileField(label="vCard File")
@@ -194,6 +200,7 @@ class ImportGoogleContactsForm(forms.Form):
 _existing_emails = lambda muaccount: EmailAddress.objects.filter(
                                                     user__muaccount_member = muaccount, 
                                                     verified=True)
+
 class MuJoinRequestForm(forms.Form):
     
     email = forms.EmailField(label=_("Email"), required=False, widget=forms.TextInput(attrs={'size':'30'}))
@@ -209,20 +216,6 @@ class MuJoinRequestForm(forms.Form):
         self.fields['contacts'].queryset = self.fields['contacts'].queryset\
                 .filter(user__owned_sites=muaccount)\
                 .exclude(email__in=_existing_emails(muaccount).values_list('email', flat=True))
-    
-    def clean(self):
-        # @@@ this assumes email-confirmation is being used
-        if 'email' in self.cleaned_data:
-            try:
-                existing_email = _existing_emails(self.cleaned_data['muaccount'])\
-                                       .get(email=self.cleaned_data['email'])
-            except EmailAddress.DoesNotExist:
-                pass
-            else:
-                self._errors['email'] = self.error_class([_(u"User with this e-mail address is already registered.")])
-                del self.cleaned_data['email']
-            
-        return self.cleaned_data
     
     def save(self, user):
         contacts = list(self.cleaned_data.get('contacts', []))
@@ -252,7 +245,7 @@ class MuJoinRequestForm(forms.Form):
             email_message = render_to_string("friends/join_invite_message.txt", context)
             
             send_mail(subject, email_message, settings.DEFAULT_FROM_EMAIL, [contact.email])        
-            join_request = JoinInvitation.objects.create(from_user=user, contact=contact, 
+            join_request = JoinInvitation.objects.get_or_create(from_user=user, contact=contact, 
                                                  message=message, status="2", 
                                                  confirmation_key=confirmation_key)
             user.message_set.create(message=_("Invitation to join sent to %(email)s") 

@@ -74,39 +74,38 @@ class MUAccount(models.Model):
         self.members.remove(user)
         signals.remove_member.send(self, user=user)
 
-class JoinRequest(models.Model):
+class InvitationRequest(models.Model):
     
     STATE_INIT = 1
-    STATE_JOINED = 2
+    STATE_INVITED = 2
     STATE_REJECTED = 3
     
     STATE_CHOICES = (
         (STATE_INIT, _("waiting")),
-        (STATE_JOINED, _("member was added")),
-        (STATE_REJECTED, _("Owner rejected request")),
+        (STATE_INVITED, _("member was invited")),
+        (STATE_REJECTED, _("request was rejected by site owner")),
     )
     
-    user = models.ForeignKey(User, related_name="join_requests")
-    muaccount = models.ForeignKey(MUAccount, related_name="join_requests")
+    email = models.EmailField(_('e-mail'))
+    muaccount = models.ForeignKey(MUAccount, related_name="join_requests", verbose_name=_('Site'))
     notes = models.TextField(_("notes"), blank=True)
     state = models.IntegerField(_('state'), choices=STATE_CHOICES, default=STATE_INIT, editable=False)
     created = models.DateTimeField(auto_now=True, editable=False)
     
     class Meta:
-        verbose_name = _('join request')
-        verbose_name_plural = _('join requests')
-        unique_together = (('user', 'muaccount'),)
+        verbose_name = _('request of invitation')
+        verbose_name_plural = _('requests of invitation')
+        unique_together = (('email', 'muaccount'),)
         ordering = ('-created',)
     
-    def join(self):
+    def set_invited(self):
         if self.state == self.STATE_INIT:
-            self.muaccount.add_member(self.user)
-            self.state = self.STATE_JOINED
+            self.state = self.STATE_INVITED
             self.save()
         else:
             raise ValueError("Only just initialized request can be accepted.")
     
-    def reject(self):
+    def set_rejected(self):
         if self.state == self.STATE_INIT:
             self.state = self.STATE_REJECTED
             self.save()

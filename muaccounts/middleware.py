@@ -59,35 +59,28 @@ class MUAccountsMiddleware(object):
         or getattr(view, 'is_public', False):
             return 
         
-        #redirect user to log in if account is not public
-        #this check should be in distinct middleware i think
-        #as it depends on django_authopenid for example
+        #Site is not public and user was not authentcated
+        #User will be redirected to invitation request page
         if not request.muaccount.is_public \
         and not request.user.is_authenticated() :
-            return redirect_to_login(request.get_full_path())
+            return redirect('invitation_request')
         
-        # force logout of non-member and non-owner from non-public site
+        #User was authenticated, but not a member of current site
         if request.user.is_authenticated() \
-               and request.user != request.muaccount.owner \
-               and  not request.muaccount.members.filter(username=request.user.username).count():
+        and request.user != request.muaccount.owner \
+        and  not request.muaccount.members.filter(username=request.user.username).count():
             
             if request.muaccount.is_public or request.muaccount.owner is None:
                 request.muaccount.add_member(request.user)
                 request.user.message_set.create(message=ugettext("You was added to this site successfully."))
             else:
-                return redirect(reverse('join_request'))
+                return redirect(reverse('invitation_request'))
         
         # call request hook
         for receiver, retval in signals.muaccount_request.send(sender=request, 
                                     request=request, muaccount=request.muaccount):
             if isinstance(retval, HttpResponse):
                 return retval
-
-
-    def process_response(self, request, response):
-        if getattr(request, "urlconf", None):
-            patch_vary_headers(response, ('Host',))
-        return response
 
 
 class LocaleMiddleware(django.middleware.locale.LocaleMiddleware):

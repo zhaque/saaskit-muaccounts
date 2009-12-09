@@ -1,5 +1,5 @@
 from django.conf.urls.defaults import *
-
+from django.views.generic.simple import direct_to_template
 from muaccounts.views import members
 
 def mu_initial(func):
@@ -41,8 +41,8 @@ urlpatterns = patterns('',
     url(r'^bbauth/success/$', 'muaccounts.views.bbauth.success', name="bbauth_success"),
     url(r'^bbauth/logout/$', 'muaccounts.views.bbauth.logout', name="bbauth.logout"),
     
-    url(r'^join_request/$', 'muaccounts.views.members.join_request', name='join_request'),
-    url(r'^proceed_join_request/(?P<state>join|reject)/(?P<user_id>\d+)/$', 
-        'muaccounts.views.members.change_join_request_state', name='proceed_join_request'),
+    url(r'^invitation_request/$', 'muaccounts.views.members.invitation_request', name='invitation_request'),
+    url(r'^proceed_invitation_request/(?P<state>invite|reject)/(?P<email>.+)/$', 
+        'muaccounts.views.members.change_invitation_request_state', name='proceed_invitation_request'),
     
 )

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from muaccounts.models import MUAccount, JoinRequest
+from muaccounts.models import MUAccount, InvitationRequest
 from muaccounts.forms import MUAccountBaseForm
 
 class MUAccountAdmin(admin.ModelAdmin):
@@ -8,7 +8,6 @@ class MUAccountAdmin(admin.ModelAdmin):
 admin.site.register(MUAccount, MUAccountAdmin)
 
 
-class JoinRequestAdmin(admin.ModelAdmin):
-    list_display = ('user', 'muaccount', 'state')
-
-admin.site.register(JoinRequest, JoinRequestAdmin)
+class InvitationRequestAdmin(admin.ModelAdmin):
+    list_display = ('email', 'muaccount', 'state')
+admin.site.register(InvitationRequest, InvitationRequestAdmin)
