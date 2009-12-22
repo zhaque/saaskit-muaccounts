@@ -195,15 +195,6 @@ Table of Contents
     - `muaccount' - an account that is claimed,
     - `site' - `sites.Site' object for current site.
 
-8 Example code
-~~~~~~~~~~~~~~
-  Example usage and templates are available as `django-saas-kit'
-  project at [http://github.com/CrowdSense/django-saas-kit/]
-
-9 Bugs and omissions
-~~~~~~~~~~~~~~~~~~~~
-  - There is no `setup.py' script for automated installation.
-
 10 License
 ~~~~~~~~~~
   This project is licensed on terms of GPL (GPL-LICENSE.txt) licenses. 
