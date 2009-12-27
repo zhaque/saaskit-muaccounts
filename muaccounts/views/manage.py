@@ -27,7 +27,7 @@ def advanced_settings(request, form_class=MUAccountForm):
         form_class=modelform_factory(MUAccount, form=form_class, fields=fields),
         object_id=request.muaccount.pk,
         post_save_redirect=reverse('muaccounts_manage_advanced'),
-        template_name='muaccounts/manage/form.html',
+        template_name='muaccounts/form.html',
         extra_context={
             'title': 'Advanced settings',
         }
@@ -44,7 +44,7 @@ def general_settings(request, form_class=MUAccountForm):
         form_class=modelform_factory(MUAccount, form=form_class, fields=fields),
         object_id=request.muaccount.pk,
         post_save_redirect=reverse('muaccounts_manage_general'),
-        template_name='muaccounts/manage/form.html',
+        template_name='muaccounts/form.html',
         extra_context={
             'title': 'General settings',
         }
@@ -64,7 +64,7 @@ def styles_settings(request, form_class=MUAccountForm):
         form_class=ThemeForm,
         object_id=request.muaccount.pk,
         post_save_redirect=reverse('muaccounts_manage_general'),
-        template_name='muaccounts/manage/form.html',
+        template_name='muaccounts/form.html',
         extra_context={
             'title': 'Color&Styles',
         }
