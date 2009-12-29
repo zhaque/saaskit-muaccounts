@@ -37,14 +37,16 @@ class MUAccount(models.Model):
     yahoo_secret = models.CharField(_("yahoo shared secret"), max_length=150, blank=True)
     
     language = models.CharField(_('language'), max_length=10, choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE)
-    is_bounty = models.BooleanField(_('Bounty flag'), default=True)
+    is_bounty = models.BooleanField(default=True, verbose_name=_('Bounty flag'))
     
     subdomain_root = _subdomain_root()
 
     class Meta:
         permissions = (
             ('can_set_custom_domain', 'Can set custom domain'),
+            ('can_set_analytics_code', 'Can set analytics code'),
             ('can_set_public_status', 'Can set public status'),
+            ('can_set_bounty_status', 'Can set bounty status'),
         )
 
     def __unicode__(self):

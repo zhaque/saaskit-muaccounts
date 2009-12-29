@@ -66,11 +66,14 @@ def create_muaccount(request, form_class=MUAccountForm, initial=None, form_field
     initial['subdomain'] = _domainify(request.user.username)
     
     form_exclude = [] if form_exclude is None else list(form_exclude)
+    if not request.user.has_perm('muaccounts.can_set_analytics_code'):
+        form_exclude.append('analytics_code')
     if not request.user.has_perm('muaccounts.can_set_custom_domain'):
         form_exclude.append('domain')
     if not request.user.has_perm('muaccounts.can_set_public_status'):
         form_exclude.append('is_public')
-    
+    if not request.user.has_perm('muaccounts.can_set_bounty_status'):
+        form_exclude.append('is_bounty')    
     
     form = modelform_factory(MUAccount, form=form_class, fields=form_fields, exclude=form_exclude)
     form.helper = FormHelper()
@@ -86,10 +89,14 @@ def change_muaccount(request, instance_id, form_exclude=None, *args, **kwargs):
         return HttpResponseForbidden()
     
     form_exclude = [] if form_exclude is None else list(form_exclude)
+    if not request.user.has_perm('muaccounts.can_set_analytics_code'):
+        form_exclude.append('analytics_code')
     if not request.user.has_perm('muaccounts.can_set_custom_domain'):
         form_exclude.append('domain')
     if not request.user.has_perm('muaccounts.can_set_public_status'):
         form_exclude.append('is_public')
+    if not request.user.has_perm('muaccounts.can_set_bounty_status'):
+        form_exclude.append('is_bounty')
     
     return frontend_edit(request, instance_id=instance_id, form_exclude=form_exclude, *args, **kwargs)
 

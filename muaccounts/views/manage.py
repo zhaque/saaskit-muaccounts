@@ -18,10 +18,16 @@ from muaccounts.views import decorators
 
 @decorators.owner_only
 def advanced_settings(request, form_class=MUAccountForm):
-    fields = ['webmaster_tools_code', 'analytics_code', 'yahoo_app_id', 'yahoo_secret']
+    fields = ['yahoo_app_id', 'yahoo_secret']
 
+    if request.user.has_perm('muaccounts.can_set_analytics_code'):
+        fields.append('analytics_code')
     if request.user.has_perm('muaccounts.can_set_custom_domain'):
         fields.append('domain')
+    if request.user.has_perm('muaccounts.can_set_public_status'):
+        fields.append('is_public')
+    if request.user.has_perm('muaccounts.can_set_bounty_status'):
+        fields.append('is_bounty')
 
     return update_object(request,
         form_class=modelform_factory(MUAccount, form=form_class, fields=fields),
@@ -35,10 +41,8 @@ def advanced_settings(request, form_class=MUAccountForm):
 
 @decorators.owner_only
 def general_settings(request, form_class=MUAccountForm):
-    fields = ['name', 'tag_line', 'about', 'logo', 'language', 'is_bounty']
+    fields = ['name', 'tag_line', 'about', 'logo', 'language', 'webmaster_tools_code']
     exclude = ('theme',)
-    if request.user.has_perm('muaccounts.can_set_public_status'):
-        fields.append('is_public')
 
     return update_object(request, 
         form_class=modelform_factory(MUAccount, form=form_class, fields=fields),
