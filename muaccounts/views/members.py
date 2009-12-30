@@ -81,11 +81,11 @@ def contacts(request, vcard_form=ImportVCardForm, cvs_form=ImportCSVContactsForm
     
     import_forms = (
         ('upload_vcard', vcard_form, _("%(total)s vCards found, %(imported)s contacts imported."),
-         _("Import vCard")),
+         _("From vCard")),
         ('upload_cvs', cvs_form, _("%(total)s contacts found, %(imported)s contacts imported."),
-         _("Import CVS")),
+         _("From CSV")),
         ('import_google', google_import_form, _("%(total)s contacts found, %(imported)s contacts imported."),
-         _("Import from Google Contacts")),
+         _("From Google Contacts")),
     )
     context = {'import_forms': []}
     
@@ -125,6 +125,61 @@ def contacts(request, vcard_form=ImportVCardForm, cvs_form=ImportCSVContactsForm
                                            'action': action, 'auth_url': auth_url})
             
     return render_to_response(template_name, context, context_instance=RequestContext(request))
+
+@login_required
+@decorators.owner_only
+def manage_contacts(request, vcard_form=ImportVCardForm, cvs_form=ImportCSVContactsForm, 
+             google_import_form=ImportGoogleContactsForm,
+             template_name="friends/manage_contacts.html"):
+    
+    import_forms = (
+        ('upload_vcard', vcard_form, _("%(total)s vCards found, %(imported)s contacts imported."),
+         _("From vCard")),
+        ('upload_cvs', cvs_form, _("%(total)s contacts found, %(imported)s contacts imported."),
+         _("From CSV")),
+        ('import_google', google_import_form, _("%(total)s contacts found, %(imported)s contacts imported."),
+         _("From Google Contacts")),
+    )
+    context = {'import_forms': []}
+    
+    for action, form_class, message, title in import_forms:
+        reset_form = True
+        if request.POST.get("action") == action:
+            form = form_class(request.POST, request.FILES)
+            if form.is_valid():
+                imported, total = form.save(request.user)
+                request.user.message_set.create(message=message % {'imported': imported, 'total': total})
+            else:
+                reset_form = False
+        
+        if reset_form:
+            form = form_class()
+        
+        context['import_forms'].append({'form': form, 'action': action, 'title': title})
+        
+
+    import_services = []
+    if request.muaccount.yahoo_app_id and request.muaccount.yahoo_secret:
+        import_services.append(('import_yahoo', 'bbauth_token', import_yahoo, 
+         _("Import from Yahoo Address Book"), reverse('bbauth_login')))
+        
+    context['import_services'] = []
+    
+    for action, token_name, import_func, title, auth_url in import_services:
+        token = request.session.get(token_name)
+        if request.POST.get("action") == action:
+            del request.session[token_name]
+            if token:
+                imported, total = import_func(token, request.user)
+                request.user.message_set.create(
+                        message=_("%(total)s people with email found, %(imported)s contacts imported.") \
+                                     % {'imported': imported, 'total': total})
+        context['import_services'].append({'title': title, 'token': token, 
+                                           'action': action, 'auth_url': auth_url})
+            
+    return render_to_response(template_name, context, context_instance=RequestContext(request))
+
+
 
 
 @decorators.public

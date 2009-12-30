@@ -9,7 +9,7 @@ from django.forms.models import modelform_factory
 from django.utils.translation import ugettext_lazy as _
 from django.shortcuts import redirect
 
-from uni_form.helpers import FormHelper, Submit, Layout, Fieldset
+from uni_form.helpers import FormHelper, Fieldset
 
 from muaccounts.models import MUAccount
 from muaccounts.forms import MUAccountForm
@@ -33,9 +33,9 @@ def advanced_settings(request, form_class=MUAccountForm):
         form_class=modelform_factory(MUAccount, form=form_class, fields=fields),
         object_id=request.muaccount.pk,
         post_save_redirect=reverse('muaccounts_manage_advanced'),
-        template_name='muaccounts/site_advanced.html',
+        template_name='muaccounts/site_settings.html',
         extra_context={
-            'title': 'Advanced settings',
+            'title': _('Advanced'),
         }
     )
 
@@ -48,9 +48,9 @@ def general_settings(request, form_class=MUAccountForm):
         form_class=modelform_factory(MUAccount, form=form_class, fields=fields),
         object_id=request.muaccount.pk,
         post_save_redirect=reverse('muaccounts_manage_general'),
-        template_name='muaccounts/site_general.html',
+        template_name='muaccounts/site_settings.html',
         extra_context={
-            'title': 'General',
+            'title': _('General'),
         }
     )
 
@@ -61,16 +61,14 @@ def styles_settings(request, form_class=MUAccountForm):
     
     ThemeForm = modelform_factory(MUAccount, form=form_class, fields=fields)
     ThemeForm.helper = FormHelper()
-    ThemeForm.helper.add_input(Submit('submit',_('Change theme')))
-    ThemeForm.helper.add_layout(Layout(Fieldset('', 'theme')))
     
     return update_object(request, 
         form_class=ThemeForm,
         object_id=request.muaccount.pk,
-        post_save_redirect=reverse('muaccounts_manage_general'),
-        template_name='muaccounts/site_css.html',
+        post_save_redirect=reverse('muaccounts_manage_styles'),
+        template_name='muaccounts/site_settings.html',
         extra_context={
-            'title': 'Color & Styles',
+            'title': _('Color & Styles'),
         }
     )
     
