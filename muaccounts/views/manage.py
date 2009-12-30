@@ -18,7 +18,7 @@ from muaccounts.views import decorators
 
 @decorators.owner_only
 def advanced_settings(request, form_class=MUAccountForm):
-    fields = ['yahoo_app_id', 'yahoo_secret']
+    fields = ['webmaster_tools_code', 'yahoo_app_id', 'yahoo_secret']
 
     if request.user.has_perm('muaccounts.can_set_analytics_code'):
         fields.append('analytics_code')
@@ -33,7 +33,7 @@ def advanced_settings(request, form_class=MUAccountForm):
         form_class=modelform_factory(MUAccount, form=form_class, fields=fields),
         object_id=request.muaccount.pk,
         post_save_redirect=reverse('muaccounts_manage_advanced'),
-        template_name='muaccounts/form.html',
+        template_name='muaccounts/site_advanced.html',
         extra_context={
             'title': 'Advanced settings',
         }
@@ -41,16 +41,16 @@ def advanced_settings(request, form_class=MUAccountForm):
 
 @decorators.owner_only
 def general_settings(request, form_class=MUAccountForm):
-    fields = ['name', 'tag_line', 'about', 'logo', 'language', 'webmaster_tools_code']
+    fields = ['name', 'tag_line', 'about', 'logo', 'language']
     exclude = ('theme',)
 
     return update_object(request, 
         form_class=modelform_factory(MUAccount, form=form_class, fields=fields),
         object_id=request.muaccount.pk,
         post_save_redirect=reverse('muaccounts_manage_general'),
-        template_name='muaccounts/form.html',
+        template_name='muaccounts/site_general.html',
         extra_context={
-            'title': 'General settings',
+            'title': 'General',
         }
     )
 
@@ -68,9 +68,9 @@ def styles_settings(request, form_class=MUAccountForm):
         form_class=ThemeForm,
         object_id=request.muaccount.pk,
         post_save_redirect=reverse('muaccounts_manage_general'),
-        template_name='muaccounts/form.html',
+        template_name='muaccounts/site_css.html',
         extra_context={
-            'title': 'Color&Styles',
+            'title': 'Color & Styles',
         }
     )
     
