@@ -1,5 +1,5 @@
-Django Multi-User Accounts
-==========================
+SaaSkit Multi-User Accounts
+===========================
 
 Django-muaccounts is an application for multi-user accounts within
 a Django project, accessible on separate domains, to use
