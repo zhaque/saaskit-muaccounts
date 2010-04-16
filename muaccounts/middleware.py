@@ -63,7 +63,11 @@ class MUAccountsMiddleware(object):
         #User will be redirected to invitation request page
         if not request.muaccount.is_public \
         and not request.user.is_authenticated() :
-            return redirect('invitation_request')
+            path = request.get_full_path()
+            place = path.find('?')
+            if place < 0: place=len(path)
+            if path[:place] != reverse('auth_login'):
+              return redirect('invitation_request')
         
         #User was authenticated, but not a member of current site
         if request.user.is_authenticated() \
