@@ -203,11 +203,11 @@ _existing_emails = lambda muaccount: EmailAddress.objects.filter(
 
 class MuJoinRequestForm(forms.Form):
     
-    email = forms.EmailField(label=_("Email"), required=False, widget=forms.TextInput(attrs={'size':'30'}))
+    email = forms.EmailField(label=_("Email"), required=False, widget=forms.TextInput(attrs={'size':'30'}), help_text=_('user email'))
     contacts = forms.models.ModelMultipleChoiceField(queryset=Contact.objects.all(),
-                                                     required=False, label=_('contacts'))
+                                                     required=False, label=_('Contacts'), help_text=_('contact list'))
     message = forms.CharField(label="Message", required=False, 
-                              widget=forms.Textarea(attrs = {'cols': '30', 'rows': '5'}))
+                              widget=forms.Textarea(attrs = {'cols': '30', 'rows': '5'}), help_text=_('invitation message'))
     muaccount = forms.IntegerField(widget=forms.HiddenInput())
     
     def __init__(self, data=None, files=None, initial=None, *args, **kwargs):
