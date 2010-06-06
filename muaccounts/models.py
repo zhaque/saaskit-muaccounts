@@ -20,11 +20,11 @@ class MUAccount(models.Model):
     owner = models.ForeignKey(User, verbose_name=_('Owner'), related_name='owned_sites',
                               null=True, blank=True)
     members = models.ManyToManyField(User, related_name='muaccount_member', blank=True, verbose_name=_('Members'))
-    name = models.CharField(max_length=256, verbose_name=_('Name'))
-    tag_line = models.CharField(max_length=256, blank=True)
-    about = models.TextField(blank=True)
+    name = models.CharField(max_length=256, verbose_name=_('Name'), help_text=_('your site name'))
+    tag_line = models.CharField(max_length=256, blank=True, help_text=_('tags'))
+    about = models.TextField(blank=True, help_text=_('your site description'))
     logo = RemovableImageField(upload_to=lambda instance, filename: 'muaccount-logos/%d.jpg' % instance.pk, 
-                               null=True, blank=True)
+                               null=True, blank=True, help_text=_('any picture file'))
     domain = models.CharField(max_length=256, unique=True, verbose_name=_('Domain'), blank=True, null=True)
     subdomain = models.CharField(max_length=256, unique=True, verbose_name=_('Subdomain'), null=True)
     is_public = models.BooleanField(default=True, verbose_name=_('Is public'))
@@ -36,7 +36,7 @@ class MUAccount(models.Model):
     yahoo_app_id = models.CharField(_("yahoo application ID"), max_length=150, blank=True)
     yahoo_secret = models.CharField(_("yahoo shared secret"), max_length=150, blank=True)
     
-    language = models.CharField(_('language'), max_length=10, choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE)
+    language = models.CharField(_('language'), max_length=10, choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE, help_text=_('default site language'))
     is_bounty = models.BooleanField(default=True, verbose_name=_('Bounty flag'))
     
     subdomain_root = _subdomain_root()
